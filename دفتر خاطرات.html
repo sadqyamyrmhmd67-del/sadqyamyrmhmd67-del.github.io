@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>پروفایل بازی با اموجی</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #1e1e2f;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    .profile-box {
+      background: #2e2e3e;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 400px;
+      margin: auto;
+    }
+    input, select {
+      width: 90%;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 1em;
+    }
+    button {
+      padding: 10px 20px;
+      background: #00bcd4;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    #profileCorner {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 15px;
+      display: none;
+      text-align: center;
+      font-size: 3em;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      border: 2px solid #ccc;
+      color: #333;
+      width: 120px;
+    }
+    #profileCorner span {
+      display: block;
+      font-size: 0.5em;
+      margin-top: 10px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h2>🎮 ساخت پروفایل با اموجی آواتار</h2>
+  <div class="profile-box">
+    <input type="text" id="username" placeholder="نام کاربری خود را وارد کنید">
+    
+    <label>انتخاب اموجی آواتار:</label><br>
+    <select id="emojiSelect">
+      <option value="">-- انتخاب آواتار --</option>
+      <option value="😎">😎 خفن</option>
+      <option value="🧙‍♂️">🧙‍♂️ جادوگر</option>
+      <option value="🐉">🐉 اژدها</option>
+      <option value="👽">👽 فضایی</option>
+      <option value="🦸‍♀️">🦸‍♀️ قهرمان</option>
+      <option value="🤖">🤖 ربات</option>
+    </select><br>
+
+    <button onclick="createProfile()">ساخت پروفایل</button>
+  </div>
+
+  <div id="profileCorner">
+    <div id="cornerEmoji"></div>
+    <span id="cornerName"></span>
+  </div>
+
+  <script>
+    function createProfile() {
+      const username = document.getElementById('username').value.trim();
+      const emoji = document.getElementById('emojiSelect').value;
+      const corner = document.getElementById('profileCorner');
+      const cornerEmoji = document.getElementById('cornerEmoji');
+      const cornerName = document.getElementById('cornerName');
+
+      if (!username || !emoji) {
+        alert("لطفاً نام کاربری و اموجی آواتار را انتخاب کنید.");
+        return;
+        {
+          
+      cornerEmoji.textContent = emoji;
+      cornerName.textContent = username;
+      corner.style.display = "block";
+    }
+  </script>
+</body>
+</html>
