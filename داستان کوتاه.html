@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>ارسال داستان</title>
+  <style>
+    body {
+      font-family: "Vazir", sans-serif;
+      background-color: #fdf6e3;
+      padding: 20px;
+      direction: rtl;
+    }
+    h1 {
+      color: #444;
+    }
+    textarea {
+      width: 100%;
+      height: 150px;
+      padding: 10px;
+      font-size: 16px;
+      resize: none;
+    }
+    button {
+      background-color: #0077cc;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      background-color: #fff;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>داستان خود را بنویسید</h1>
+  <textarea id="storyInput" placeholder="اینجا داستانت رو بنویس..."></textarea>
+  <button onclick="submitStory()">ارسال داستان</button>
+
+  <h2>📚 داستان‌های ارسال‌شده</h2>
+  <ul id="storyList"></ul>
+
+  <script>
+    function submitStory() {
+      const input = document.getElementById("storyInput");
+      const story = input.value.trim();
+      if (story.length === 0) {
+        alert("لطفاً داستانی بنویسید.");
+        return;
+      }
+
+      const list = document.getElementById("storyList");
+      const newItem = document.createElement("li");
+      newItem.textContent = story;
+      list.prepend(newItem); // اضافه کردن به ابتدای لیست
+
+      input.value = ""; // پاک کردن ورودی
+    }
+  </script>
+
+</body>
+</html>
