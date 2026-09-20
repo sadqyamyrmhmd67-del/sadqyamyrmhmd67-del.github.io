@@ -1,108 +1,351 @@
 <!DOCTYPE html>
-
-<!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>پروفایل بازی با اموجی</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #1e1e2f;
-      color: white;
-      text-align: center;
-      padding: 20px;
-    }
-    .profile-box {
-      background: #2e2e3e;
-      padding: 20px;
-      border-radius: 10px;
-      max-width: 400px;
-      margin: auto;
-    }
-    input, select {
-      width: 90%;
-      margin: 10px 0;
-      padding: 10px;
-      border-radius: 5px;
-      border: none;
-      font-size: 1em;
-    }
-    button {
-      padding: 10px 20px;
-      background: #00bcd4;
-      border: none;
-      border-radius: 5px;
-      color: white;
-      cursor: pointer;
-      font-size: 1em;
-    }
-    #profileCorner {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 15px;
-      display: none;
-      text-align: center;
-      font-size: 3em;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      border: 2px solid #ccc;
-      color: #333;
-      width: 120px;
-    }
-    #profileCorner span {
-      display: block;
-      font-size: 0.5em;
-      margin-top: 10px;
-      color: #555;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>دوز آنلاین</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { touch-action: manipulation; }
+body { font-family: Tahoma, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #1a1a2e; color: #eee; padding: 15px; }
+h1 { color: #e94560; margin: 5px 0 15px; font-size: 24px; }
+#lobby, #game { display: none; width: 100%; max-width: 380px; text-align: center; }
+#lobby { display: block; }
+button { padding: 12px 24px; font-size: 16px; cursor: pointer; background: #0f3460; color: #fff; border: none; border-radius: 8px; font-family: inherit; touch-action: manipulation; }
+button:disabled { background: #555; cursor: not-allowed; }
+#status { margin-top: 15px; color: #aaa; }
+
+/* صفحه بازی */
+.board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    background: #16213e;
+    padding: 10px;
+    border-radius: 12px;
+    margin: 15px auto;
+    width: 100%;
+    max-width: 300px;
+    aspect-ratio: 1;
+    touch-action: none;
+}
+.cell {
+    background: #0f3460;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 55px;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    aspect-ratio: 1;
+    /* ⚡ رفع تأخیر لمس */
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    /* ⚡ بهینه‌سازی رندر */
+    contain: layout style paint;
+}
+.cell.taken { cursor: default; }
+.cell.x { color: #e94560; }
+.cell.o { color: #4ecdc4; }
+.cell.x::after { content: 'X'; }
+.cell.o::after { content: 'O'; }
+
+#game-status { font-size: 18px; margin: 8px 0; min-height: 26px; font-weight: bold; }
+#turn-indicator { margin: 5px 0; color: #aaa; font-size: 14px; min-height: 20px; }
+#game-status.win { color: #4ecdc4; }
+#game-status.lose { color: #e94560; }
+#game-status.draw { color: #f9ca24; }
+
+/* چت */
+#chat-section { margin-top: 15px; background: #16213e; border-radius: 12px; padding: 10px; width: 100%; max-width: 300px; }
+#chat-header { font-size: 13px; color: #aaa; margin-bottom: 8px; border-bottom: 1px solid #0f3460; padding-bottom: 5px; }
+#chat-messages { height: 130px; overflow-y: auto; padding: 4px; display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
+#chat-messages::-webkit-scrollbar { width: 4px; }
+#chat-messages::-webkit-scrollbar-thumb { background: #0f3460; border-radius: 4px; }
+.chat-msg { max-width: 75%; padding: 6px 10px; border-radius: 12px; font-size: 13px; word-wrap: break-word; }
+.chat-msg.me { background: #e94560; color: #fff; align-self: flex-end; border-bottom-right-radius: 3px; }
+.chat-msg.opponent { background: #0f3460; color: #eee; align-self: flex-start; border-bottom-left-radius: 3px; }
+#chat-input-row { display: flex; gap: 6px; }
+#chat-input { flex: 1; padding: 8px 10px; border-radius: 8px; border: none; background: #0f3460; color: #fff; font-family: inherit; font-size: 13px; outline: none; min-width: 0; }
+#chat-input::placeholder { color: #888; }
+#send-btn { padding: 8px 14px; font-size: 13px; margin: 0; background: #e94560; }
+#restart-btn { margin-top: 10px; }
+</style>
 </head>
 <body>
-  <h2>🎮 ساخت پروفایل با اموجی آواتار</h2>
-  <h>hello game</h>
-  <h1>wooord game</h1>
-  <div class="profile-box">
-    <input type="text" id="username" placeholder="نام کاربری خود را وارد کنید">
-    
-    <label>انتخاب اموجی آواتار:</label><br>
-    <select id="emojiSelect">
-      <option value="">-- انتخاب آواتار --</option>
-      <option value="😎">😎 خفن</option>
-      <option value="🧙‍♂️">🧙‍♂️ جادوگر</option>
-      <option value="🐉">🐉 اژدها</option>
-      <option value="👽">👽 فضایی</option>
-      <option value="🦸‍♀️">🦸‍♀️ قهرمان</option>
-      <option value="🤖">🤖 ربات</option>
-    </select><br>
+<h1>🎮 دوز آنلاین</h1>
 
-    <button onclick="createProfile()">ساخت پروفایل</button>
-  </div>
+<div id="lobby">
+    <p>برای پیدا کردن حریف کلیک کن:</p>
+    <button id="find-match-btn">جستجوی حریف</button>
+    <p id="status">وضعیت: آماده</p>
+</div>
 
-  <div id="profileCorner">
-    <div id="cornerEmoji"></div>
-    <span id="cornerName"></span>
-  </div>
+<div id="game">
+    <div id="game-status"></div>
+    <div id="turn-indicator"></div>
+    <div class="board" id="board"></div>
+    <div id="chat-section">
+        <div id="chat-header">💬 چت با حریف</div>
+        <div id="chat-messages"></div>
+        <div id="chat-input-row">
+            <input type="text" id="chat-input" placeholder="پیام..." maxlength="200">
+            <button id="send-btn">ارسال</button>
+        </div>
+    </div>
+    <button id="restart-btn" style="display:none;">بازی جدید</button>
+</div>
 
-  <script>
-    function createProfile() {
-      const username = document.getElementById('username').value.trim();
-      const emoji = document.getElementById('emojiSelect').value;
-      const corner = document.getElementById('profileCorner');
-      const cornerEmoji = document.getElementById('cornerEmoji');
-      const cornerName = document.getElementById('cornerName');
+<script>
+const SUPABASE_URL = 'https://plpkixgydnsilujlwizi.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_-obcx5r6P_a4PmxF6_dikw_XIoW6OYQ';
 
-      if (!username || !emoji) {
-        alert("لطفاً نام کاربری و اموجی آواتار را انتخاب کنید.");
-        return;
-        {
-          
-      cornerEmoji.textContent = emoji;
-      cornerName.textContent = username;
-      corner.style.display = "block";
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const state = {
+    board: Array(9).fill(null),
+    currentPlayer: 'X',
+    winner: null,
+    mySymbol: null,
+    started: false,
+    active: false,
+    myId: 'p_' + Math.random().toString(36).substring(2, 9)
+};
+
+const $ = id => document.getElementById(id);
+const lobbyDiv = $('lobby'), gameDiv = $('game'), findBtn = $('find-match-btn');
+const statusP = $('status'), boardDiv = $('board'), gameStatusDiv = $('game-status');
+const turnIndicator = $('turn-indicator'), restartBtn = $('restart-btn');
+const chatMessages = $('chat-messages'), chatInput = $('chat-input'), sendBtn = $('send-btn');
+
+let lobbyChannel = null, gameChannel = null;
+
+// ============ جستجوی حریف ============
+findBtn.addEventListener('click', async () => {
+    findBtn.disabled = true;
+    statusP.textContent = 'در حال جستجو...';
+
+    lobbyChannel = sb.channel('public-lobby');
+
+    lobbyChannel
+        .on('broadcast', { event: 'looking' }, ({ payload }) => {
+            if (payload.playerId !== state.myId && !state.started) {
+                const room = [state.myId, payload.playerId].sort().join('-');
+                lobbyChannel.send({
+                    type: 'broadcast',
+                    event: 'room',
+                    payload: { room, creator: state.myId }
+                });
+                startGame(room, payload.playerId);
+            }
+        })
+        .on('broadcast', { event: 'room' }, ({ payload }) => {
+            if (!state.started && payload.creator !== state.myId) {
+                startGame(payload.room, payload.creator);
+            }
+        })
+        .subscribe(status => {
+            if (status === 'SUBSCRIBED') {
+                lobbyChannel.send({
+                    type: 'broadcast',
+                    event: 'looking',
+                    payload: { playerId: state.myId }
+                });
+            }
+        });
+});
+
+// ============ شروع بازی ============
+function startGame(room, opponentId) {
+    if (state.started) return;
+    state.started = true;
+    state.active = true;
+    state.mySymbol = (state.myId < opponentId) ? 'X' : 'O';
+
+    if (lobbyChannel) { lobbyChannel.unsubscribe(); lobbyChannel = null; }
+
+    lobbyDiv.style.display = 'none';
+    gameDiv.style.display = 'block';
+    boardDiv.innerHTML = '';
+    chatMessages.innerHTML = '';
+    gameStatusDiv.textContent = '';
+    gameStatusDiv.className = '';
+
+    // ⚡ ساخت سلول‌ها با DocumentFragment (یک بار به DOM اضافه می‌شن)
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < 9; i++) {
+        const c = document.createElement('div');
+        c.className = 'cell';
+        c.dataset.index = i;
+        // ⚡ pointerdown به جای click (فوری، بدون تأخیر ۳۰۰ms موبایل)
+        c.addEventListener('pointerdown', onCellPointer, { passive: false });
+        // 🔄 fallback برای مرورگرهای قدیمی که pointerdown ندارن
+        if (!window.PointerEvent) {
+            c.addEventListener('touchstart', onCellPointer, { passive: false });
+        }
+        frag.appendChild(c);
     }
-  </script>
+    boardDiv.appendChild(frag);
+
+    setupGame(room);
+    resetState();
+}
+
+// ⚡ تابع جداگانه برای مدیریت لمس فوری
+function onCellPointer(e) {
+    e.preventDefault();
+    const i = parseInt(e.currentTarget.dataset.index);
+    onCellClick(i);
+}
+
+function resetState() {
+    state.board = Array(9).fill(null);
+    state.currentPlayer = 'X';
+    state.winner = null;
+    state.active = true;
+    updateUI();
+}
+
+// ============ کانال بازی ============
+function setupGame(room) {
+    gameChannel = sb.channel('game-' + room);
+
+    gameChannel
+        .on('broadcast', { event: 'move' }, ({ payload }) => {
+            if (payload.symbol !== state.mySymbol && state.board[payload.index] === null && state.active) {
+                applyMove(payload.index, payload.symbol);
+            }
+        })
+        .on('broadcast', { event: 'chat' }, ({ payload }) => {
+            addMsg(payload.text, 'opponent');
+        })
+        .on('broadcast', { event: 'restart' }, () => {
+            resetGame();
+        })
+        .subscribe(status => {
+            if (status === 'SUBSCRIBED') {
+                turnIndicator.textContent = `شما ${state.mySymbol} هستید`;
+                updateUI();
+            }
+        });
+}
+
+// ============ کلیک روی خانه ============
+function onCellClick(i) {
+    if (!state.active || state.winner) return;
+    if (state.board[i] !== null) return;
+    if (state.currentPlayer !== state.mySymbol) return;
+
+    // ۱. فوری اعمال کن (بدون انتظار برای شبکه)
+    applyMove(i, state.mySymbol);
+
+    // ۲. در پس‌زمینه به حریف بفرست (بدون await)
+    if (gameChannel) {
+        gameChannel.send({
+            type: 'broadcast',
+            event: 'move',
+            payload: { index: i, symbol: state.mySymbol }
+        });
+    }
+}
+
+// ============ اعمال حرکت ============
+function applyMove(i, symbol) {
+    if (state.board[i] !== null) return;
+    state.board[i] = symbol;
+    const cell = boardDiv.children[i];
+    // ⚡ فقط کلاس اضافه می‌کنیم — CSS ::after محتوا رو فوری نشون می‌ده
+    cell.classList.add(symbol.toLowerCase(), 'taken');
+
+    const w = checkWinner(state.board);
+    if (w) {
+        state.winner = w;
+        state.active = false;
+        showResult(w);
+        restartBtn.style.display = 'block';
+    } else {
+        state.currentPlayer = state.currentPlayer === 'X' ? 'O' : 'X';
+    }
+    updateUI();
+}
+
+function checkWinner(b) {
+    const L = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for (const [a,c,d] of L) {
+        if (b[a] && b[a] === b[c] && b[a] === b[d]) return b[a];
+    }
+    return b.every(x => x) ? 'draw' : null;
+}
+
+function showResult(w) {
+    gameStatusDiv.className = '';
+    if (w === 'draw') {
+        gameStatusDiv.textContent = '🤝 مساوی!';
+        gameStatusDiv.classList.add('draw');
+    } else if (w === state.mySymbol) {
+        gameStatusDiv.textContent = '🎉 برنده شدی!';
+        gameStatusDiv.classList.add('win');
+    } else {
+        gameStatusDiv.textContent = '😢 باختی!';
+        gameStatusDiv.classList.add('lose');
+    }
+    turnIndicator.textContent = '';
+}
+
+function updateUI() {
+    if (!state.active || state.winner) return;
+    turnIndicator.textContent = state.currentPlayer === state.mySymbol ? 'نوبت شماست' : 'نوبت حریف';
+}
+
+// ============ چت ============
+function addMsg(text, who) {
+    const d = document.createElement('div');
+    d.className = 'chat-msg ' + who;
+    d.textContent = text;
+    chatMessages.appendChild(d);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function sendChat() {
+    const t = chatInput.value.trim();
+    if (!t || !gameChannel) return;
+    addMsg(t, 'me');
+    gameChannel.send({ type: 'broadcast', event: 'chat', payload: { text: t } });
+    chatInput.value = '';
+    chatInput.focus();
+}
+
+sendBtn.addEventListener('click', sendChat);
+chatInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); sendChat(); }
+});
+
+// ============ بازی جدید ============
+restartBtn.addEventListener('click', () => {
+    if (gameChannel) gameChannel.send({ type: 'broadcast', event: 'restart', payload: {} });
+    resetGame();
+});
+
+function resetGame() {
+    state.board = Array(9).fill(null);
+    state.currentPlayer = 'X';
+    state.winner = null;
+    state.active = true;
+    restartBtn.style.display = 'none';
+    gameStatusDiv.textContent = 'بازی جدید!';
+    gameStatusDiv.className = '';
+
+    [...boardDiv.children].forEach(c => {
+        c.className = 'cell';
+    });
+    chatMessages.innerHTML = '';
+    updateUI();
+}
+</script>
 </body>
 </html>
