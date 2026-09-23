@@ -162,7 +162,7 @@ function initApp(){
     sb=supabase.createClient(
       'https://plpkixgydnsilujlwizi.supabase.co',
       'sb_publishable_-obcx5r6P_a4PmxF6_dikw_XIoW6OYQ',
-      {auth:{persistSession:true,autoRefreshToken:true}}
+      {auth:{persistSession:true,autoRefreshToken:true,storage:window.localStorage}}
     );
   }catch(e){$('auth-status').textContent='خطا: '+e.message;$('auth-status').style.color='#b5453a';return;}
   doAuth();bindUI();
@@ -180,65 +180,48 @@ function fmtRemain(ms){
   return h>0?h+' ساعت و '+m+' دقیقه':m+' دقیقه';
 }
 
-// ─── Auth با ذخیره‌سازی دائمی ───
+// ─── Auth با ایمیل/پسورد ثابت روی دستگاه ───
 async function doAuth(){
   const status=$('auth-status');
-  const lines=document.querySelectorAll('#size-select .line');
   try{
-    // ۱. اگه قبلاً ذخیره کردیم، با همون وارد شو
-    const saved=localStorage.getItem('dos_auth');
-    if(saved){
-      try{
-        const {email,password}=JSON.parse(saved);
-        const {data,error}=await sb.auth.signInWithPassword({email,password});
-        if(!error&&data.user){
-          uid=data.user.id;
-          return finishAuth();
-        }
-      }catch(e){console.warn('saved login failed:',e);}
-    }
-
-    // ۲. session فعلی رو چک کن
+    // اگر session معتبر داریم، از همون استفاده کن
     const {data:{session}}=await sb.auth.getSession();
-    if(session){
+    if(session&&session.user&&session.expires_at*1000>Date.now()+60000){
       uid=session.user.id;
-      await persistCreds(session.user);
       return finishAuth();
     }
 
-    // ۳. کاربر جدید بساز
-    const {data,error}=await sb.auth.signInAnonymously();
-    if(error) throw error;
+    // credentials دستگاه رو از localStorage بخون یا بساز
+    let creds=localStorage.getItem('dos_creds');
+    if(!creds){
+      const rid='u'+Math.random().toString(36).slice(2,10)+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+      const rpw='Pw'+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)+'!';
+      creds=JSON.stringify({email:rid+'@dos-game.local',password:rpw});
+      localStorage.setItem('dos_creds',creds);
+    }
+    const {email,password}=JSON.parse(creds);
+
+    // اول تلاش برای ورود
+    let {data,error}=await sb.auth.signInWithPassword({email,password});
+
+    // اگه کاربر وجود نداشت → بساز
+    if(error){
+      const signup=await sb.auth.signUp({email,password});
+      if(signup.error) throw signup.error;
+      if(!signup.data.session){
+        // یعنی email confirmation روشنه و کاربر تایید نشده
+        throw new Error('ایمیل تایید (Confirm email) در Supabase روشن است. لطفا از Providers → Email خاموش کنید.');
+      }
+      data=signup.data;
+    }
+
     uid=data.user.id;
-    await persistCreds(data.user);
     finishAuth();
   }catch(e){
     status.textContent='خطا: '+e.message;
     status.style.color='#b5453a';
     console.error('auth error:',e);
   }
-}
-
-// تبدیل کاربر anonymous به کاربر با ایمیل/پسورد دائمی
-async function persistCreds(user){
-  try{
-    if(!user) return;
-    // اگه کاربر قبلاً ایمیل داره، کاری نکن
-    if(user.email && user.email.endsWith('@dos-game.local')) return;
-
-    const email='u'+user.id.replace(/-/g,'')+'@dos-game.local';
-    const password='pw_'+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);
-
-    const {data,error}=await sb.auth.updateUser({email,password});
-    if(error){
-      console.warn('updateUser failed:',error.message);
-      // اگه ایمیل از قبل هست، با همون پسورد نمی‌تونیم وارد شیم؛ رها می‌کنیم
-      return;
-    }
-    if(data.user){
-      localStorage.setItem('dos_auth',JSON.stringify({email,password}));
-    }
-  }catch(e){console.warn('persistCreds:',e);}
 }
 
 async function finishAuth(){
@@ -249,7 +232,8 @@ async function finishAuth(){
 
 async function loadProfile(){
   const {data,error}=await sb.rpc('get_my_profile');
-  if(error||!data||!data.length) return;
+  if(error){console.warn('get_my_profile:',error.message);return;}
+  if(!data||!data.length) return;
   const p=data[0];
   if(p.username){
     username=p.username;
@@ -526,4 +510,4 @@ function botMove(b,n,me,opp){
 }
 </script>
 </body>
-      </html>
+        </html>
