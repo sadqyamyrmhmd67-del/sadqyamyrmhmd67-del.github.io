@@ -161,7 +161,8 @@ function initApp(){
   try{
     sb=supabase.createClient(
       'https://plpkixgydnsilujlwizi.supabase.co',
-      'sb_publishable_-obcx5r6P_a4PmxF6_dikw_XIoW6OYQ'
+      'sb_publishable_-obcx5r6P_a4PmxF6_dikw_XIoW6OYQ',
+      {auth:{persistSession:true,autoRefreshToken:true}}
     );
   }catch(e){$('auth-status').textContent='خطا: '+e.message;$('auth-status').style.color='#b5453a';return;}
   doAuth();bindUI();
@@ -179,25 +180,71 @@ function fmtRemain(ms){
   return h>0?h+' ساعت و '+m+' دقیقه':m+' دقیقه';
 }
 
+// ─── Auth با ذخیره‌سازی دائمی ───
 async function doAuth(){
   const status=$('auth-status');
   const lines=document.querySelectorAll('#size-select .line');
   try{
-    const {data:{session}}=await sb.auth.getSession();
-    if(session) uid=session.user.id;
-    else{
-      const {data,error}=await sb.auth.signInAnonymously();
-      if(error) throw error;
-      uid=data.user.id;
+    // ۱. اگه قبلاً ذخیره کردیم، با همون وارد شو
+    const saved=localStorage.getItem('dos_auth');
+    if(saved){
+      try{
+        const {email,password}=JSON.parse(saved);
+        const {data,error}=await sb.auth.signInWithPassword({email,password});
+        if(!error&&data.user){
+          uid=data.user.id;
+          return finishAuth();
+        }
+      }catch(e){console.warn('saved login failed:',e);}
     }
-    status.textContent='آماده';
-    lines.forEach(l=>l.classList.remove('disabled'));
-    await loadProfile();
+
+    // ۲. session فعلی رو چک کن
+    const {data:{session}}=await sb.auth.getSession();
+    if(session){
+      uid=session.user.id;
+      await persistCreds(session.user);
+      return finishAuth();
+    }
+
+    // ۳. کاربر جدید بساز
+    const {data,error}=await sb.auth.signInAnonymously();
+    if(error) throw error;
+    uid=data.user.id;
+    await persistCreds(data.user);
+    finishAuth();
   }catch(e){
     status.textContent='خطا: '+e.message;
     status.style.color='#b5453a';
     console.error('auth error:',e);
   }
+}
+
+// تبدیل کاربر anonymous به کاربر با ایمیل/پسورد دائمی
+async function persistCreds(user){
+  try{
+    if(!user) return;
+    // اگه کاربر قبلاً ایمیل داره، کاری نکن
+    if(user.email && user.email.endsWith('@dos-game.local')) return;
+
+    const email='u'+user.id.replace(/-/g,'')+'@dos-game.local';
+    const password='pw_'+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);
+
+    const {data,error}=await sb.auth.updateUser({email,password});
+    if(error){
+      console.warn('updateUser failed:',error.message);
+      // اگه ایمیل از قبل هست، با همون پسورد نمی‌تونیم وارد شیم؛ رها می‌کنیم
+      return;
+    }
+    if(data.user){
+      localStorage.setItem('dos_auth',JSON.stringify({email,password}));
+    }
+  }catch(e){console.warn('persistCreds:',e);}
+}
+
+async function finishAuth(){
+  $('auth-status').textContent='آماده';
+  document.querySelectorAll('#size-select .line').forEach(l=>l.classList.remove('disabled'));
+  await loadProfile();
 }
 
 async function loadProfile(){
@@ -303,6 +350,8 @@ async function cancelSearch(){
   $('waiting').style.display='none';
   $('size-select').style.display='block';
   $('game').style.display='none';
+  $('username-row').style.display='flex';
+  $('lock-msg').style.display='block';
   gid=null;gstate=null;oppName=null;
 }
 
@@ -319,7 +368,7 @@ function subscribeGame(){
 
 async function loadOppName(g){
   const oppId=g.player_x===uid?g.player_o:g.player_x;
-  if(!oppId){oppName='در انتظار...';return;}
+  if(!oppId){oppName='در انتظار...';$('opp-name').textContent=oppName;return;}
   if(oppName&&oppName!=='در انتظار...') return;
   const {data}=await sb.from('profiles').select('username').eq('id',oppId).maybeSingle();
   oppName=(data&&data.username)?data.username:'حریف';
@@ -477,4 +526,4 @@ function botMove(b,n,me,opp){
 }
 </script>
 </body>
-        </html>
+      </html>
