@@ -21,7 +21,9 @@ body{font-family:Tahoma,sans-serif;display:flex;flex-direction:column;margin:0;b
 .line{display:flex;align-items:center;justify-content:space-between;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:14px 18px;margin:10px 0;cursor:pointer;font-size:17px;font-weight:bold;color:#5a4630;text-decoration:none}
 .line:active{background:#e0cfa0;transform:scale(.98)}
 .line .arrow2{color:#8b6f47;font-size:18px}
+.line.disabled{opacity:.5;pointer-events:none}
 button{padding:12px 24px;font-size:15px;cursor:pointer;background:#8b6f47;color:#fff;border:none;border-radius:8px;font-family:inherit}
+#auth-status{color:#8b6f47;font-size:12px;margin:6px 0;min-height:16px}
 #waiting{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:22px}
 #waiting p{color:#5a4630;font-size:16px;font-weight:bold;margin:0}
 .spinner{width:46px;height:46px;border:5px solid #e0cfa0;border-top-color:#8b6f47;border-radius:50%;animation:spin .8s linear infinite}
@@ -62,9 +64,10 @@ button{padding:12px 24px;font-size:15px;cursor:pointer;background:#8b6f47;color:
   <div class="panel active" id="panel-online">
     <div id="size-select">
       <p style="color:#5a4630;font-size:14px;margin:8px 0">اندازه تخته را انتخاب کن:</p>
-      <div class="line" data-size="4"><span>۴×۴</span><span class="arrow2">›</span></div>
-      <div class="line" data-size="7"><span>۷×۷</span><span class="arrow2">›</span></div>
-      <div class="line" data-size="10"><span>۱۰×۱۰</span><span class="arrow2">›</span></div>
+      <p id="auth-status">در حال اتصال...</p>
+      <div class="line disabled" data-size="4"><span>۴×۴</span><span class="arrow2">›</span></div>
+      <div class="line disabled" data-size="7"><span>۷×۷</span><span class="arrow2">›</span></div>
+      <div class="line disabled" data-size="10"><span>۱۰×۱۰</span><span class="arrow2">›</span></div>
     </div>
     <div id="waiting">
       <div class="back" id="cancel-btn"><span class="arrow">›</span>خروج از این قسمت</div>
@@ -126,12 +129,23 @@ let uid=null,gid=null,gstate=null,ch=null,searching=false;
 
 // ─── Auth ───
 (async()=>{
-  const {data:{session}}=await sb.auth.getSession();
-  if(session) uid=session.user.id;
-  else{
-    const {data,error}=await sb.auth.signInAnonymously();
-    if(error){console.error('auth:',error.message);return;}
-    uid=data.user.id;
+  const status=$('auth-status');
+  const lines=document.querySelectorAll('#size-select .line');
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(session){
+      uid=session.user.id;
+    }else{
+      const {data,error}=await sb.auth.signInAnonymously();
+      if(error) throw error;
+      uid=data.user.id;
+    }
+    status.textContent='آماده';
+    lines.forEach(l=>l.classList.remove('disabled'));
+  }catch(e){
+    status.textContent='خطا در اتصال: '+e.message;
+    status.style.color='#b5453a';
+    console.error('auth error:',e);
   }
 })();
 
@@ -153,7 +167,7 @@ const turnIndicator=$('turn-indicator'),restartBtn=$('restart-btn');
 const chatMessages=$('chat-messages'),chatInput=$('chat-input'),sendBtn=$('send-btn');
 
 document.querySelectorAll('#size-select .line').forEach(l=>l.addEventListener('click',()=>{
-  if(!uid){alert('در حال اتصال... چند لحظه بعد دوباره بزن');return;}
+  if(!uid) return;
   startSearch(parseInt(l.dataset.size));
 }));
 $('cancel-btn').addEventListener('click',cancelSearch);
@@ -375,4 +389,4 @@ function botMove(b,n,me,opp){
 }
 </script>
 </body>
-</html>
+  </html>
