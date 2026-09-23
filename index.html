@@ -67,6 +67,16 @@ button:disabled{background:#5a5f75;cursor:not-allowed}
 #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#b5453a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:1000;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
 #toast.show{opacity:1}
 #toast.ok{background:#2e7d6f}
+#exit-arrow{position:absolute;top:6px;left:8px;font-size:26px;color:#8b6f47;font-weight:bold;cursor:pointer;padding:4px 12px;z-index:10;line-height:1}
+#exit-arrow:active{color:#b5453a}
+#modal-bg{display:none;position:fixed;inset:0;background:rgba(30,20,10,.55);z-index:100;align-items:center;justify-content:center}
+#modal-bg.show{display:flex}
+#modal{background:#fffaf0;border:2px solid #8b6f47;border-radius:14px;padding:22px 20px;max-width:320px;width:88%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+#modal p{color:#3a2e1f;font-weight:bold;font-size:15px;line-height:1.7;margin:0 0 18px}
+#modal .row{display:flex;gap:10px;justify-content:space-between}
+#modal .row button{flex:1;padding:11px 8px;font-size:14px;border-radius:8px}
+#modal-continue{background:#2e7d6f}
+#modal-exit{background:#b5453a}
 </style>
 </head>
 <body>
@@ -79,6 +89,7 @@ button:disabled{background:#5a5f75;cursor:not-allowed}
 
 <div class="panels">
   <div class="panel active" id="panel-online">
+    <div id="exit-arrow">›</div>
     <div id="username-row">
       <label for="username-input">نام:</label>
       <input id="username-input" type="text" maxlength="7" placeholder="۳ تا ۷ کاراکتر">
@@ -145,6 +156,16 @@ button:disabled{background:#5a5f75;cursor:not-allowed}
 
 <div id="toast"></div>
 
+<div id="modal-bg">
+  <div id="modal">
+    <p>اگه بازی رو ترک کنی حریف برنده میشه!</p>
+    <div class="row">
+      <button id="modal-continue">ادامه</button>
+      <button id="modal-exit">خروج</button>
+    </div>
+  </div>
+</div>
+
 <script>
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 document.addEventListener('gesturestart',e=>e.preventDefault());
@@ -180,18 +201,14 @@ function fmtRemain(ms){
   return h>0?h+' ساعت و '+m+' دقیقه':m+' دقیقه';
 }
 
-// ─── Auth با ایمیل/پسورد ثابت روی دستگاه ───
 async function doAuth(){
   const status=$('auth-status');
   try{
-    // اگر session معتبر داریم، از همون استفاده کن
     const {data:{session}}=await sb.auth.getSession();
     if(session&&session.user&&session.expires_at*1000>Date.now()+60000){
       uid=session.user.id;
       return finishAuth();
     }
-
-    // credentials دستگاه رو از localStorage بخون یا بساز
     let creds=localStorage.getItem('dos_creds');
     if(!creds){
       const rid='u'+Math.random().toString(36).slice(2,10)+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -200,21 +217,13 @@ async function doAuth(){
       localStorage.setItem('dos_creds',creds);
     }
     const {email,password}=JSON.parse(creds);
-
-    // اول تلاش برای ورود
     let {data,error}=await sb.auth.signInWithPassword({email,password});
-
-    // اگه کاربر وجود نداشت → بساز
     if(error){
       const signup=await sb.auth.signUp({email,password});
       if(signup.error) throw signup.error;
-      if(!signup.data.session){
-        // یعنی email confirmation روشنه و کاربر تایید نشده
-        throw new Error('ایمیل تایید (Confirm email) در Supabase روشن است. لطفا از Providers → Email خاموش کنید.');
-      }
+      if(!signup.data.session) throw new Error('Confirm email در Supabase روشن است');
       data=signup.data;
     }
-
     uid=data.user.id;
     finishAuth();
   }catch(e){
@@ -232,13 +241,9 @@ async function finishAuth(){
 
 async function loadProfile(){
   const {data,error}=await sb.rpc('get_my_profile');
-  if(error){console.warn('get_my_profile:',error.message);return;}
-  if(!data||!data.length) return;
+  if(error||!data||!data.length) return;
   const p=data[0];
-  if(p.username){
-    username=p.username;
-    $('username-input').value=username;
-  }
+  if(p.username){username=p.username;$('username-input').value=username;}
   if(p.locked_until){
     const remain=new Date(p.locked_until).getTime()-Date.now();
     if(remain>0) lockInput(remain);
@@ -247,8 +252,7 @@ async function loadProfile(){
 
 function lockInput(remainMs){
   const inp=$('username-input'),btn=$('confirm-btn'),msg=$('lock-msg');
-  inp.disabled=true;inp.classList.add('locked');
-  btn.disabled=true;
+  inp.disabled=true;inp.classList.add('locked');btn.disabled=true;
   msg.textContent='نام کاربری تا '+fmtRemain(remainMs)+' دیگر قفل است';
 }
 
@@ -258,15 +262,10 @@ async function saveUsername(){
   if(!v||v===username) return;
   msg.textContent='';
   const {data,error}=await sb.rpc('set_username',{p_username:v});
-  if(error){
-    toast(error.message);
-    inp.value=username||'';
-    return;
-  }
+  if(error){toast(error.message);inp.value=username||'';return;}
   username=v;
   toast('نام کاربری ذخیره شد',true);
-  const lockUntil=new Date(data).getTime();
-  const remain=lockUntil-Date.now();
+  const remain=new Date(data).getTime()-Date.now();
   if(remain>0) lockInput(remain);
 }
 
@@ -297,6 +296,24 @@ function bindUI(){
     if(!gid) return;
     $('chat-messages').innerHTML='';
     await sb.rpc('request_restart',{p_game_id:gid});
+  });
+
+  $('exit-arrow').addEventListener('click',()=>{
+    if(gstate && gstate.status==='playing' && !gstate.winner){
+      $('modal-bg').classList.add('show');
+    } else {
+      cancelSearch();
+    }
+  });
+  $('modal-continue').addEventListener('click',()=>{
+    $('modal-bg').classList.remove('show');
+  });
+  $('modal-exit').addEventListener('click',async()=>{
+    $('modal-bg').classList.remove('show');
+    if(gid){
+      try{await sb.rpc('resign_game',{p_game_id:gid});}catch(e){console.warn(e);}
+    }
+    cancelSearch();
   });
 
   document.querySelectorAll('#off-size .line').forEach(l=>l.addEventListener('click',()=>{
@@ -336,6 +353,7 @@ async function cancelSearch(){
   $('game').style.display='none';
   $('username-row').style.display='flex';
   $('lock-msg').style.display='block';
+  $('exit-arrow').style.display='block';
   gid=null;gstate=null;oppName=null;
 }
 
@@ -367,6 +385,7 @@ function renderGame(g){
     $('game').style.display='block';
     $('username-row').style.display='none';
     $('lock-msg').style.display='none';
+    $('exit-arrow').style.display='block';
     $('my-name').textContent=username||'---';
     buildBoard($('board'),g.size,onCellPointer);
   }
@@ -510,4 +529,4 @@ function botMove(b,n,me,opp){
 }
 </script>
 </body>
-        </html>
+                                                                                              </html>
