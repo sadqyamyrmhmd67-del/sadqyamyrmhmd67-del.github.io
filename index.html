@@ -4,7 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>دوز</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
+<script>
+(function(){
+  var cdns=[
+    'https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js',
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js',
+    'https://cdn.skypack.dev/@supabase/supabase-js@2'
+  ];
+  var i=0;
+  function load(){
+    if(i>=cdns.length){console.error('همه CDNها ناموفق');return;}
+    var s=document.createElement('script');
+    s.src=cdns[i++];
+    s.onerror=load;
+    s.onload=function(){
+      if(window.supabase && window.supabase.createClient){
+        window.dispatchEvent(new Event('sb-ready'));
+      }else{load();}
+    };
+    document.head.appendChild(s);
+  }
+  load();
+})();
+</script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html,body{touch-action:manipulation;height:100%;overscroll-behavior:none}
@@ -119,16 +141,31 @@ document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
 
-const sb=supabase.createClient(
-  'https://plpkixgydnsilujlwizi.supabase.co',
-  'sb_publishable_-obcx5r6P_a4PmxF6_dikw_XIoW6OYQ'
-);
-
 const $=id=>document.getElementById(id);
-let uid=null,gid=null,gstate=null,ch=null,searching=false;
+let sb=null,uid=null,gid=null,gstate=null,ch=null,searching=false;
 
-// ─── Auth ───
-(async()=>{
+// راه‌اندازی بعد از لود شدن کتابخونه
+window.addEventListener('sb-ready',initApp);
+// اگه زودتر از رویداد لود شده
+if(window.supabase && window.supabase.createClient) initApp();
+let _inited=false;
+function initApp(){
+  if(_inited) return; _inited=true;
+  try{
+    sb=supabase.createClient(
+      'https://plpkixgydnsilujlwizi.supabase.co',
+      'sb_publishable_-obcx5r6P_a4PmxF6_dikw_XIoW6OYQ'
+    );
+  }catch(e){
+    $('auth-status').textContent='خطا: '+e.message;
+    $('auth-status').style.color='#b5453a';
+    return;
+  }
+  doAuth();
+  bindUI();
+}
+
+async function doAuth(){
   const status=$('auth-status');
   const lines=document.querySelectorAll('#size-select .line');
   try{
@@ -143,39 +180,60 @@ let uid=null,gid=null,gstate=null,ch=null,searching=false;
     status.textContent='آماده';
     lines.forEach(l=>l.classList.remove('disabled'));
   }catch(e){
-    status.textContent='خطا در اتصال: '+e.message;
+    status.textContent='خطا: '+e.message;
     status.style.color='#b5453a';
     console.error('auth error:',e);
   }
-})();
+}
 
-// ─── تب‌ها ───
-document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
-  t.classList.add('active');
-  $('panel-'+t.dataset.tab).classList.add('active');
-  if(t.dataset.tab!=='online'&&searching) cancelSearch();
-}));
+function bindUI(){
+  // تب‌ها
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    $('panel-'+t.dataset.tab).classList.add('active');
+    if(t.dataset.tab!=='online'&&searching) cancelSearch();
+  }));
+
+  // آنلاین - انتخاب اندازه
+  document.querySelectorAll('#size-select .line').forEach(l=>l.addEventListener('click',()=>{
+    if(!uid) return;
+    startSearch(parseInt(l.dataset.size));
+  }));
+  $('cancel-btn').addEventListener('click',cancelSearch);
+
+  // چت
+  $('send-btn').addEventListener('click',sendChat);
+  $('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();sendChat();}});
+  $('restart-btn').addEventListener('click',async()=>{
+    if(!gid) return;
+    $('chat-messages').innerHTML='';
+    await sb.rpc('request_restart',{p_game_id:gid});
+  });
+
+  // آفلاین - انتخاب اندازه
+  document.querySelectorAll('#off-size .line').forEach(l=>l.addEventListener('click',()=>{
+    off.size=parseInt(l.dataset.size);
+    $('off-size').style.display='none';
+    $('off-game').style.display='block';
+    startOffline();
+  }));
+  $('off-back').addEventListener('click',()=>{
+    $('off-game').style.display='none';
+    $('off-size').style.display='block';
+    off.active=false;
+  });
+  $('off-restart').addEventListener('click',startOffline);
+}
 
 // ══════════════════════════════════════════
 // آنلاین
 // ══════════════════════════════════════════
-const sizeSelect=$('size-select'),waitingDiv=$('waiting'),gameDiv=$('game');
-const boardDiv=$('board'),gameStatusDiv=$('game-status');
-const turnIndicator=$('turn-indicator'),restartBtn=$('restart-btn');
-const chatMessages=$('chat-messages'),chatInput=$('chat-input'),sendBtn=$('send-btn');
-
-document.querySelectorAll('#size-select .line').forEach(l=>l.addEventListener('click',()=>{
-  if(!uid) return;
-  startSearch(parseInt(l.dataset.size));
-}));
-$('cancel-btn').addEventListener('click',cancelSearch);
-
 async function startSearch(size){
   searching=true;
-  sizeSelect.style.display='none';
-  waitingDiv.style.display='flex';
+  $('size-select').style.display='none';
+  $('waiting').style.display='flex';
   const {data,error}=await sb.rpc('find_match',{p_size:size});
   if(error||!data){
     searching=false;
@@ -190,9 +248,9 @@ async function cancelSearch(){
   searching=false;
   if(ch){sb.removeChannel(ch);ch=null;}
   try{await sb.rpc('cancel_search');}catch(e){}
-  waitingDiv.style.display='none';
-  sizeSelect.style.display='block';
-  gameDiv.style.display='none';
+  $('waiting').style.display='none';
+  $('size-select').style.display='block';
+  $('game').style.display='none';
   gid=null;gstate=null;
 }
 
@@ -210,29 +268,30 @@ function subscribeGame(){
 function renderGame(g){
   gstate=g;
   if(g.status==='waiting') return;
-  if(waitingDiv.style.display==='flex'||gameDiv.style.display==='none'){
-    waitingDiv.style.display='none';
-    gameDiv.style.display='block';
-    buildBoard(boardDiv,g.size,onCellPointer);
+  if($('waiting').style.display==='flex'||$('game').style.display==='none'){
+    $('waiting').style.display='none';
+    $('game').style.display='block';
+    buildBoard($('board'),g.size,onCellPointer);
   }
   const my=g.player_x===uid?'X':'O';
   for(let i=0;i<g.board.length;i++){
-    const c=boardDiv.children[i];
+    const c=$('board').children[i];
     const v=g.board[i];
     const cls='cell'+(v?' '+v.toLowerCase()+' taken':'');
     if(c.className!==cls) c.className=cls;
   }
+  const gs=$('game-status'),ti=$('turn-indicator');
   if(g.winner){
-    gameStatusDiv.className='';
-    if(g.winner==='draw'){gameStatusDiv.textContent='مساوی!';gameStatusDiv.classList.add('draw');}
-    else if(g.winner===my){gameStatusDiv.textContent='برنده شدی!';gameStatusDiv.classList.add('win');}
-    else{gameStatusDiv.textContent='باختی!';gameStatusDiv.classList.add('lose');}
-    turnIndicator.textContent='';
-    restartBtn.style.display='block';
+    gs.className='';
+    if(g.winner==='draw'){gs.textContent='مساوی!';gs.classList.add('draw');}
+    else if(g.winner===my){gs.textContent='برنده شدی!';gs.classList.add('win');}
+    else{gs.textContent='باختی!';gs.classList.add('lose');}
+    ti.textContent='';
+    $('restart-btn').style.display='block';
   }else{
-    gameStatusDiv.textContent='';gameStatusDiv.className='';
-    turnIndicator.textContent=g.current_turn===my?'نوبت شماست':'نوبت حریف';
-    restartBtn.style.display='none';
+    gs.textContent='';gs.className='';
+    ti.textContent=g.current_turn===my?'نوبت شماست':'نوبت حریف';
+    $('restart-btn').style.display='none';
   }
 }
 
@@ -259,9 +318,9 @@ async function onCellClick(i){
   if(gstate.current_turn!==my) return;
   if(gstate.board[i]!==null) return;
 
-  const cell=boardDiv.children[i];
+  const cell=$('board').children[i];
   cell.classList.add(my.toLowerCase(),'taken');
-  turnIndicator.textContent='نوبت حریف';
+  $('turn-indicator').textContent='نوبت حریف';
   gstate.board[i]=my;
   gstate.current_turn=my==='X'?'O':'X';
 
@@ -270,7 +329,7 @@ async function onCellClick(i){
     cell.classList.remove(my.toLowerCase(),'taken');
     gstate.board[i]=null;
     gstate.current_turn=my;
-    turnIndicator.textContent='نوبت شماست';
+    $('turn-indicator').textContent='نوبت شماست';
     console.warn('move rejected:',error.message);
   }
 }
@@ -279,56 +338,32 @@ function addMsg(text,who){
   const d=document.createElement('div');
   d.className='chat-msg '+who;
   d.textContent=text;
-  chatMessages.appendChild(d);
-  chatMessages.scrollTop=chatMessages.scrollHeight;
+  const cm=$('chat-messages');
+  cm.appendChild(d);
+  cm.scrollTop=cm.scrollHeight;
 }
 
 async function sendChat(){
-  const t=chatInput.value.trim();
+  const inp=$('chat-input');
+  const t=inp.value.trim();
   if(!t||!gid) return;
-  chatInput.value='';
+  inp.value='';
   const {error}=await sb.rpc('send_message',{p_game_id:gid,p_text:t});
   if(error) console.warn('chat rejected:',error.message);
 }
-sendBtn.addEventListener('click',sendChat);
-chatInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();sendChat();}});
-
-restartBtn.addEventListener('click',async()=>{
-  if(!gid) return;
-  chatMessages.innerHTML='';
-  await sb.rpc('request_restart',{p_game_id:gid});
-});
 
 // ══════════════════════════════════════════
 // آفلاین
 // ══════════════════════════════════════════
 const off={board:[],size:0,turn:'X',winner:null,active:false};
-const offSize=$('off-size'),offGame=$('off-game');
-const offBoard=$('off-board'),offStatus=$('off-status');
-const offTurn=$('off-turn'),offRestart=$('off-restart'),offBack=$('off-back');
-
-document.querySelectorAll('#off-size .line').forEach(l=>l.addEventListener('click',()=>{
-  off.size=parseInt(l.dataset.size);
-  offSize.style.display='none';
-  offGame.style.display='block';
-  startOffline();
-}));
-
-offBack.addEventListener('click',()=>{
-  offGame.style.display='none';
-  offSize.style.display='block';
-  off.active=false;
-});
-
-offRestart.addEventListener('click',startOffline);
 
 function startOffline(){
   off.board=Array(off.size*off.size).fill(null);
   off.turn='X';off.winner=null;off.active=true;
-  offStatus.textContent='';offStatus.className='';
-  offTurn.textContent='نوبت شماست';
-  offRestart.style.display='none';
-  buildBoard(offBoard,off.size,onOffPointer);
+  $('off-status').textContent='';$('off-status').className='';
+  $('off-turn').textContent='نوبت شماست';
+  $('off-restart').style.display='none';
+  buildBoard($('off-board'),off.size,onOffPointer);
 }
 
 function onOffPointer(e){e.preventDefault();onOffClick(parseInt(e.currentTarget.dataset.index));}
@@ -338,26 +373,27 @@ function onOffClick(i){
   doOffMove(i,'X');
   if(off.winner) return;
   off.turn='O';
-  offTurn.textContent='نوبت ربات...';
+  $('off-turn').textContent='نوبت ربات...';
   setTimeout(()=>{
     const mv=botMove(off.board,off.size,'O','X');
     if(mv>=0) doOffMove(mv,'O');
-    if(!off.winner){off.turn='X';offTurn.textContent='نوبت شماست';}
+    if(!off.winner){off.turn='X';$('off-turn').textContent='نوبت شماست';}
   },300);
 }
 
 function doOffMove(i,sym){
   off.board[i]=sym;
-  offBoard.children[i].classList.add(sym.toLowerCase(),'taken');
+  $('off-board').children[i].classList.add(sym.toLowerCase(),'taken');
   const w=checkLine(off.board,off.size,sym)?sym:(off.board.every(x=>x)?'draw':null);
   if(w){
     off.winner=w;off.active=false;
-    offStatus.className='';
-    if(w==='draw'){offStatus.textContent='مساوی!';offStatus.classList.add('draw');}
-    else if(w==='X'){offStatus.textContent='برنده شدی!';offStatus.classList.add('win');}
-    else{offStatus.textContent='ربات برد!';offStatus.classList.add('lose');}
-    offTurn.textContent='';
-    offRestart.style.display='block';
+    const os=$('off-status');
+    os.className='';
+    if(w==='draw'){os.textContent='مساوی!';os.classList.add('draw');}
+    else if(w==='X'){os.textContent='برنده شدی!';os.classList.add('win');}
+    else{os.textContent='ربات برد!';os.classList.add('lose');}
+    $('off-turn').textContent='';
+    $('off-restart').style.display='block';
   }
 }
 
