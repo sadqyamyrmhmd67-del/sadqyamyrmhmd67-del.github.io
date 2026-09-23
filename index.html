@@ -25,10 +25,19 @@ body{font-family:Tahoma,sans-serif;display:flex;flex-direction:column;margin:0;b
 .line .arrow2{color:#8b6f47;font-size:18px}
 .line.disabled{opacity:.5;pointer-events:none}
 button{padding:12px 24px;font-size:15px;cursor:pointer;background:#8b6f47;color:#fff;border:none;border-radius:8px;font-family:inherit}
+button:disabled{background:#5a5f75;cursor:not-allowed}
 #auth-status{color:#8b6f47;font-size:12px;margin:6px 0;min-height:16px}
-#username-row{display:flex;align-items:center;gap:8px;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:8px 12px;margin:0 0 10px}
+#username-row{display:flex;align-items:center;gap:6px;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:8px 12px;margin:0 0 6px}
 #username-row label{color:#5a4630;font-weight:bold;font-size:13px;white-space:nowrap}
-#username-input{flex:1;padding:6px 10px;border:1px solid #c9b88f;border-radius:6px;background:#fffaf0;color:#3a2e1f;font-family:inherit;font-size:14px;outline:none;min-width:0;text-align:center;-webkit-user-select:text;user-select:text}
+#username-input{flex:1;padding:7px 10px;border:1px solid #c9b88f;border-radius:6px;background:#fffaf0;color:#3a2e1f;font-family:inherit;font-size:14px;outline:none;min-width:0;text-align:center;-webkit-user-select:text;user-select:text;transition:.2s}
+#username-input.locked{background:#1e2436;color:#b8bed1;border-color:#1e2436;cursor:not-allowed;pointer-events:none}
+#confirm-btn{padding:7px 12px;font-size:13px;background:#2e7d6f;border-radius:6px}
+#confirm-btn:disabled{background:#3a4055}
+#lock-msg{font-size:11px;color:#b5453a;margin:4px 0 8px;min-height:14px;text-align:center}
+#game-names{display:flex;align-items:center;justify-content:space-between;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:10px 14px;margin:0 0 10px;font-weight:bold;font-size:14px;color:#3a2e1f}
+#game-names .vs{color:#b5453a;font-size:13px;padding:0 8px}
+#my-name{color:#2e7d6f}
+#opp-name{color:#b5453a}
 #waiting{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;gap:22px}
 #waiting p{color:#5a4630;font-size:16px;font-weight:bold;margin:0}
 .spinner{width:46px;height:46px;border:5px solid #e0cfa0;border-top-color:#8b6f47;border-radius:50%;animation:spin .8s linear infinite}
@@ -57,6 +66,7 @@ button{padding:12px 24px;font-size:15px;cursor:pointer;background:#8b6f47;color:
 #off-back{margin-top:8px;background:#8b6f47}
 #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#b5453a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:1000;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
 #toast.show{opacity:1}
+#toast.ok{background:#2e7d6f}
 </style>
 </head>
 <body>
@@ -70,9 +80,11 @@ button{padding:12px 24px;font-size:15px;cursor:pointer;background:#8b6f47;color:
 <div class="panels">
   <div class="panel active" id="panel-online">
     <div id="username-row">
-      <label for="username-input">نام کاربری:</label>
+      <label for="username-input">نام:</label>
       <input id="username-input" type="text" maxlength="7" placeholder="۳ تا ۷ کاراکتر">
+      <button id="confirm-btn">تایید</button>
     </div>
+    <div id="lock-msg"></div>
 
     <div id="size-select">
       <p style="color:#5a4630;font-size:14px;margin:8px 0">اندازه تخته را انتخاب کن:</p>
@@ -87,6 +99,11 @@ button{padding:12px 24px;font-size:15px;cursor:pointer;background:#8b6f47;color:
       <div class="spinner"></div>
     </div>
     <div id="game" style="display:none">
+      <div id="game-names">
+        <span id="my-name">---</span>
+        <span class="vs">vs</span>
+        <span id="opp-name">---</span>
+      </div>
       <div id="game-status"></div>
       <div id="turn-indicator"></div>
       <div class="board" id="board"></div>
@@ -134,7 +151,7 @@ document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
 
 const $=id=>document.getElementById(id);
-let sb=null,uid=null,username=null,gid=null,gstate=null,ch=null,searching=false;
+let sb=null,uid=null,username=null,gid=null,gstate=null,ch=null,searching=false,oppName=null;
 
 window.addEventListener('sb-ready',initApp);
 if(window.supabase&&window.supabase.createClient) initApp();
@@ -150,10 +167,16 @@ function initApp(){
   doAuth();bindUI();
 }
 
-function toast(msg){
+function toast(msg,ok){
   const t=$('toast');
-  t.textContent=msg;t.classList.add('show');
-  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2500);
+  t.textContent=msg;t.className='show'+(ok?' ok':'');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.className='',2500);
+}
+
+function fmtRemain(ms){
+  const h=Math.floor(ms/3600000);
+  const m=Math.floor((ms%3600000)/60000);
+  return h>0?h+' ساعت و '+m+' دقیقه':m+' دقیقه';
 }
 
 async function doAuth(){
@@ -169,9 +192,7 @@ async function doAuth(){
     }
     status.textContent='آماده';
     lines.forEach(l=>l.classList.remove('disabled'));
-    // بارگذاری نام کاربری
-    const {data}=await sb.from('profiles').select('username').eq('id',uid).maybeSingle();
-    if(data&&data.username){ username=data.username; $('username-input').value=username; }
+    await loadProfile();
   }catch(e){
     status.textContent='خطا: '+e.message;
     status.style.color='#b5453a';
@@ -179,20 +200,43 @@ async function doAuth(){
   }
 }
 
+async function loadProfile(){
+  const {data,error}=await sb.rpc('get_my_profile');
+  if(error||!data||!data.length) return;
+  const p=data[0];
+  if(p.username){
+    username=p.username;
+    $('username-input').value=username;
+  }
+  if(p.locked_until){
+    const remain=new Date(p.locked_until).getTime()-Date.now();
+    if(remain>0) lockInput(remain);
+  }
+}
+
+function lockInput(remainMs){
+  const inp=$('username-input'),btn=$('confirm-btn'),msg=$('lock-msg');
+  inp.disabled=true;inp.classList.add('locked');
+  btn.disabled=true;
+  msg.textContent='نام کاربری تا '+fmtRemain(remainMs)+' دیگر قفل است';
+}
+
 async function saveUsername(){
-  const inp=$('username-input');
+  const inp=$('username-input'),msg=$('lock-msg');
   const v=inp.value.trim();
-  if(v===username) return;
-  if(v.length<3){ toast('حداقل نام کاربری ۳ کاراکتر'); inp.value=username||''; return; }
-  if(v.length>7){ toast('حداکثر نام کاربری ۷ کاراکتر'); inp.value=username||''; return; }
-  const {error}=await sb.rpc('set_username',{p_username:v});
+  if(!v||v===username) return;
+  msg.textContent='';
+  const {data,error}=await sb.rpc('set_username',{p_username:v});
   if(error){
     toast(error.message);
     inp.value=username||'';
     return;
   }
   username=v;
-  toast('نام کاربری ذخیره شد');
+  toast('نام کاربری ذخیره شد',true);
+  const lockUntil=new Date(data).getTime();
+  const remain=lockUntil-Date.now();
+  if(remain>0) lockInput(remain);
 }
 
 function bindUI(){
@@ -204,13 +248,14 @@ function bindUI(){
     if(t.dataset.tab!=='online'&&searching) cancelSearch();
   }));
 
-  // نام کاربری
-  const inp=$('username-input');
-  inp.addEventListener('blur',saveUsername);
-  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
+  $('confirm-btn').addEventListener('click',saveUsername);
+  $('username-input').addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();saveUsername();}
+  });
 
   document.querySelectorAll('#size-select .line').forEach(l=>l.addEventListener('click',()=>{
     if(!uid) return;
+    if(!username){toast('اول نام کاربری را تایید کنید');return;}
     startSearch(parseInt(l.dataset.size));
   }));
   $('cancel-btn').addEventListener('click',cancelSearch);
@@ -258,7 +303,7 @@ async function cancelSearch(){
   $('waiting').style.display='none';
   $('size-select').style.display='block';
   $('game').style.display='none';
-  gid=null;gstate=null;
+  gid=null;gstate=null;oppName=null;
 }
 
 function subscribeGame(){
@@ -272,14 +317,28 @@ function subscribeGame(){
     });
 }
 
+async function loadOppName(g){
+  const oppId=g.player_x===uid?g.player_o:g.player_x;
+  if(!oppId){oppName='در انتظار...';return;}
+  if(oppName&&oppName!=='در انتظار...') return;
+  const {data}=await sb.from('profiles').select('username').eq('id',oppId).maybeSingle();
+  oppName=(data&&data.username)?data.username:'حریف';
+  $('opp-name').textContent=oppName;
+}
+
 function renderGame(g){
   gstate=g;
   if(g.status==='waiting') return;
   if($('waiting').style.display==='flex'||$('game').style.display==='none'){
     $('waiting').style.display='none';
     $('game').style.display='block';
+    $('username-row').style.display='none';
+    $('lock-msg').style.display='none';
+    $('my-name').textContent=username||'---';
     buildBoard($('board'),g.size,onCellPointer);
   }
+  loadOppName(g);
+
   const my=g.player_x===uid?'X':'O';
   for(let i=0;i<g.board.length;i++){
     const c=$('board').children[i];
@@ -313,8 +372,7 @@ function buildBoard(container,n,handler){
     if(!window.PointerEvent) c.addEventListener('touchstart',handler,{passive:false});
     frag.appendChild(c);
   }
-  container.innerHTML='';
-  container.appendChild(frag);
+  container.innerHTML='';container.appendChild(frag);
 }
 
 function onCellPointer(e){e.preventDefault();onCellClick(parseInt(e.currentTarget.dataset.index));}
@@ -337,7 +395,6 @@ async function onCellClick(i){
     gstate.board[i]=null;
     gstate.current_turn=my;
     $('turn-indicator').textContent='نوبت شماست';
-    console.warn('move rejected:',error.message);
   }
 }
 
@@ -352,11 +409,9 @@ async function sendChat(){
   const t=inp.value.trim();
   if(!t||!gid) return;
   inp.value='';
-  const {error}=await sb.rpc('send_message',{p_game_id:gid,p_text:t});
-  if(error) console.warn('chat rejected:',error.message);
+  await sb.rpc('send_message',{p_game_id:gid,p_text:t});
 }
 
-// ─── آفلاین ───
 const off={board:[],size:0,turn:'X',winner:null,active:false};
 
 function startOffline(){
@@ -422,4 +477,4 @@ function botMove(b,n,me,opp){
 }
 </script>
 </body>
-  </html>
+        </html>
