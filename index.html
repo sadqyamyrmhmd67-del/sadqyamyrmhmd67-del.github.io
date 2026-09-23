@@ -22,15 +22,24 @@ body{font-family:Tahoma,sans-serif;display:flex;flex-direction:column;margin:0;b
 .line .arrow2{color:#8b6f47;font-size:18px}.line.disabled{opacity:.5;pointer-events:none}
 button{padding:12px 24px;font-size:15px;cursor:pointer;background:#8b6f47;color:#fff;border:none;border-radius:8px;font-family:inherit}
 button:disabled{background:#5a5f75;cursor:not-allowed}
-#auth-status{color:#8b6f47;font-size:12px;margin:6px 0;min-height:16px}
-#username-row{display:flex;align-items:center;gap:6px;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:8px 12px;margin:0 0 6px}
+#auth-status{display:none}
+
+/* ─── پروفایل بالا ─── */
+#username-row{display:flex;align-items:center;gap:6px;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:8px 12px;margin:0 0 6px;max-width:340px;margin-left:auto;margin-right:auto}
 #username-row label{color:#5a4630;font-weight:bold;font-size:13px;white-space:nowrap}
 #username-input{flex:1;padding:7px 10px;border:1px solid #c9b88f;border-radius:6px;background:#fffaf0;color:#3a2e1f;font-family:inherit;font-size:14px;outline:none;min-width:0;text-align:center;-webkit-user-select:text;user-select:text;transition:.2s}
 #username-input.locked{background:#1e2436;color:#b8bed1;border-color:#1e2436;cursor:not-allowed;pointer-events:none}
 #confirm-btn{padding:7px 12px;font-size:13px;background:#2e7d6f;border-radius:6px}
 #confirm-btn:disabled{background:#3a4055}
 #lock-msg{font-size:11px;color:#b5453a;margin:4px 0 8px;min-height:14px;text-align:center}
-#game-names{display:flex;align-items:center;justify-content:space-between;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:10px 14px;margin:0 0 10px;font-weight:bold;font-size:14px}
+
+/* ─── تخته انتخاب ─── */
+#size-select{margin-top:80px;padding:0 8px;text-align:center}
+#size-select p{color:#5a4630;font-size:14px;margin:0 0 14px;font-weight:bold}
+#size-select .line{max-width:340px;margin:10px auto}
+
+/* ─── بازی ─── */
+#game-names{display:flex;align-items:center;justify-content:space-between;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:10px 14px;margin:0 0 10px;font-weight:bold;font-size:14px;max-width:340px;margin-left:auto;margin-right:auto}
 #game-names .vs{color:#b5453a;font-size:13px;padding:0 8px}
 #my-name{color:#2e7d6f}#opp-name{color:#b5453a}
 #waiting{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;gap:22px}
@@ -61,7 +70,7 @@ button:disabled{background:#5a5f75;cursor:not-allowed}
 #off-back{margin-top:8px;background:#8b6f47}
 #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#b5453a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:1000;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
 #toast.show{opacity:1}#toast.ok{background:#2e7d6f}
-#exit-arrow{position:fixed;top:60px;left:10px;font-size:28px;color:#8b6f47;font-weight:bold;cursor:pointer;padding:4px 14px;z-index:50;line-height:1;background:rgba(255,250,240,.85);border:2px solid #8b6f47;border-radius:8px;touch-action:manipulation}
+#exit-arrow{display:none;position:absolute;top:8px;left:8px;font-size:26px;color:#8b6f47;font-weight:bold;cursor:pointer;padding:2px 14px;z-index:50;line-height:1;background:rgba(255,250,240,.9);border:2px solid #8b6f47;border-radius:8px;touch-action:manipulation}
 #exit-arrow:active{color:#b5453a;background:#e0cfa0}
 #modal-bg{display:none;position:fixed;inset:0;background:rgba(30,20,10,.55);z-index:200;align-items:center;justify-content:center}
 #modal-bg.show{display:flex}
@@ -82,16 +91,18 @@ button:disabled{background:#5a5f75;cursor:not-allowed}
 
 <div class="panels">
   <div class="panel active" id="panel-online">
+    <div id="exit-arrow">›</div>
+
     <div id="username-row">
       <label for="username-input">نام:</label>
       <input id="username-input" type="text" maxlength="7" placeholder="۳ تا ۷ کاراکتر">
       <button id="confirm-btn">تایید</button>
     </div>
     <div id="lock-msg"></div>
+    <p id="auth-status"></p>
 
     <div id="size-select">
-      <p style="color:#5a4630;font-size:14px;margin:8px 0">اندازه تخته را انتخاب کن:</p>
-      <p id="auth-status">در حال اتصال...</p>
+      <p>اندازه تخته را انتخاب کن:</p>
       <div class="line disabled" data-size="4"><span>۴×۴</span><span class="arrow2">›</span></div>
       <div class="line disabled" data-size="7"><span>۷×۷</span><span class="arrow2">›</span></div>
       <div class="line disabled" data-size="10"><span>۱۰×۱۰</span><span class="arrow2">›</span></div>
@@ -142,7 +153,6 @@ button:disabled{background:#5a5f75;cursor:not-allowed}
   </div>
 </div>
 
-<div id="exit-arrow">›</div>
 <div id="toast"></div>
 
 <div id="modal-bg">
@@ -174,7 +184,7 @@ function initApp(){
       'sb_publishable_-obcx5r6P_a4PmxF6_dikw_XIoW6OYQ',
       {auth:{persistSession:true,autoRefreshToken:true,storage:window.localStorage}}
     );
-  }catch(e){$('auth-status').textContent='خطا: '+e.message;$('auth-status').style.color='#b5453a';return;}
+  }catch(e){console.error(e);return;}
   doAuth();bindUI();
 }
 
@@ -189,7 +199,6 @@ function fmtRemain(ms){
 }
 
 async function doAuth(){
-  const status=$('auth-status');
   try{
     const {data:{session}}=await sb.auth.getSession();
     if(session&&session.user&&session.expires_at*1000>Date.now()+60000){
@@ -211,14 +220,10 @@ async function doAuth(){
       data=signup.data;
     }
     uid=data.user.id;finishAuth();
-  }catch(e){
-    status.textContent='خطا: '+e.message;
-    status.style.color='#b5453a';
-  }
+  }catch(e){console.error('auth:',e);}
 }
 
 async function finishAuth(){
-  $('auth-status').textContent='آماده';
   document.querySelectorAll('#size-select .line').forEach(l=>l.classList.remove('disabled'));
   const {data,error}=await sb.rpc('get_my_profile');
   if(error||!data||!data.length) return;
@@ -254,7 +259,6 @@ function bindUI(){
     document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');$('panel-'+t.dataset.tab).classList.add('active');
     if(t.dataset.tab!=='online'&&searching) cancelSearch();
-    updateExitArrow();
   }));
 
   $('confirm-btn').addEventListener('click',saveUsername);
@@ -298,9 +302,10 @@ function bindUI(){
   $('off-restart').addEventListener('click',startOffline);
 }
 
+// ─── فقط در حین بازی نشان بده ───
 function updateExitArrow(){
-  const isOnline=$('panel-online').classList.contains('active');
-  $('exit-arrow').style.display=isOnline?'block':'none';
+  const inGame = gstate && gstate.status==='playing' && !gstate.winner;
+  $('exit-arrow').style.display = inGame ? 'block' : 'none';
 }
 
 async function startSearch(size){
@@ -322,6 +327,7 @@ async function cancelSearch(){
   $('username-row').style.display='flex';
   $('lock-msg').style.display='block';
   gid=null;gstate=null;oppName=null;
+  updateExitArrow();
 }
 
 function subscribeGame(){
@@ -346,7 +352,7 @@ async function loadOppName(g){
 
 function renderGame(g){
   gstate=g;
-  if(g.status==='waiting') return;
+  if(g.status==='waiting'){updateExitArrow();return;}
   if($('waiting').style.display==='flex'||$('game').style.display==='none'){
     $('waiting').style.display='none';
     $('game').style.display='block';
@@ -374,6 +380,7 @@ function renderGame(g){
     ti.textContent=g.current_turn===my?'نوبت شماست':'نوبت حریف';
     $('menu-btn').style.display='none';
   }
+  updateExitArrow();
 }
 
 function buildBoard(container,n,handler){
@@ -486,8 +493,6 @@ function botMove(b,n,me,opp){
   if(b[c]===null) return c;
   return empty[Math.floor(Math.random()*empty.length)];
 }
-
-updateExitArrow();
 </script>
 </body>
-  </html>
+        </html>
