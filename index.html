@@ -5,27 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>دوز</title>
 <script>
-(function(){
-  var cdns=[
-    'https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js',
-    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js',
-    'https://cdn.skypack.dev/@supabase/supabase-js@2'
-  ];
-  var i=0;
-  function load(){
-    if(i>=cdns.length){console.error('همه CDNها ناموفق');return;}
-    var s=document.createElement('script');
-    s.src=cdns[i++];
-    s.onerror=load;
-    s.onload=function(){
-      if(window.supabase && window.supabase.createClient){
-        window.dispatchEvent(new Event('sb-ready'));
-      }else{load();}
-    };
-    document.head.appendChild(s);
-  }
-  load();
-})();
+(function(){var c=['https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js','https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js','https://cdn.skypack.dev/@supabase/supabase-js@2'];var i=0;function L(){if(i>=c.length)return;var s=document.createElement('script');s.src=c[i++];s.onerror=L;s.onload=function(){if(window.supabase&&window.supabase.createClient)window.dispatchEvent(new Event('sb-ready'));else L();};document.head.appendChild(s);}L();})();
 </script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -46,7 +26,10 @@ body{font-family:Tahoma,sans-serif;display:flex;flex-direction:column;margin:0;b
 .line.disabled{opacity:.5;pointer-events:none}
 button{padding:12px 24px;font-size:15px;cursor:pointer;background:#8b6f47;color:#fff;border:none;border-radius:8px;font-family:inherit}
 #auth-status{color:#8b6f47;font-size:12px;margin:6px 0;min-height:16px}
-#waiting{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:22px}
+#username-row{display:flex;align-items:center;gap:8px;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:8px 12px;margin:0 0 10px}
+#username-row label{color:#5a4630;font-weight:bold;font-size:13px;white-space:nowrap}
+#username-input{flex:1;padding:6px 10px;border:1px solid #c9b88f;border-radius:6px;background:#fffaf0;color:#3a2e1f;font-family:inherit;font-size:14px;outline:none;min-width:0;text-align:center;-webkit-user-select:text;user-select:text}
+#waiting{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;gap:22px}
 #waiting p{color:#5a4630;font-size:16px;font-weight:bold;margin:0}
 .spinner{width:46px;height:46px;border:5px solid #e0cfa0;border-top-color:#8b6f47;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -72,6 +55,8 @@ button{padding:12px 24px;font-size:15px;cursor:pointer;background:#8b6f47;color:
 #send-btn{padding:7px 12px;font-size:12px;margin:0;background:#b5453a}
 #restart-btn,#off-restart{margin-top:8px;background:#2e7d6f}
 #off-back{margin-top:8px;background:#8b6f47}
+#toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#b5453a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:1000;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
+#toast.show{opacity:1}
 </style>
 </head>
 <body>
@@ -84,6 +69,11 @@ button{padding:12px 24px;font-size:15px;cursor:pointer;background:#8b6f47;color:
 
 <div class="panels">
   <div class="panel active" id="panel-online">
+    <div id="username-row">
+      <label for="username-input">نام کاربری:</label>
+      <input id="username-input" type="text" maxlength="7" placeholder="۳ تا ۷ کاراکتر">
+    </div>
+
     <div id="size-select">
       <p style="color:#5a4630;font-size:14px;margin:8px 0">اندازه تخته را انتخاب کن:</p>
       <p id="auth-status">در حال اتصال...</p>
@@ -136,33 +126,34 @@ button{padding:12px 24px;font-size:15px;cursor:pointer;background:#8b6f47;color:
   </div>
 </div>
 
+<div id="toast"></div>
+
 <script>
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
 
 const $=id=>document.getElementById(id);
-let sb=null,uid=null,gid=null,gstate=null,ch=null,searching=false;
+let sb=null,uid=null,username=null,gid=null,gstate=null,ch=null,searching=false;
 
-// راه‌اندازی بعد از لود شدن کتابخونه
 window.addEventListener('sb-ready',initApp);
-// اگه زودتر از رویداد لود شده
-if(window.supabase && window.supabase.createClient) initApp();
+if(window.supabase&&window.supabase.createClient) initApp();
 let _inited=false;
 function initApp(){
-  if(_inited) return; _inited=true;
+  if(_inited) return;_inited=true;
   try{
     sb=supabase.createClient(
       'https://plpkixgydnsilujlwizi.supabase.co',
       'sb_publishable_-obcx5r6P_a4PmxF6_dikw_XIoW6OYQ'
     );
-  }catch(e){
-    $('auth-status').textContent='خطا: '+e.message;
-    $('auth-status').style.color='#b5453a';
-    return;
-  }
-  doAuth();
-  bindUI();
+  }catch(e){$('auth-status').textContent='خطا: '+e.message;$('auth-status').style.color='#b5453a';return;}
+  doAuth();bindUI();
+}
+
+function toast(msg){
+  const t=$('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2500);
 }
 
 async function doAuth(){
@@ -170,15 +161,17 @@ async function doAuth(){
   const lines=document.querySelectorAll('#size-select .line');
   try{
     const {data:{session}}=await sb.auth.getSession();
-    if(session){
-      uid=session.user.id;
-    }else{
+    if(session) uid=session.user.id;
+    else{
       const {data,error}=await sb.auth.signInAnonymously();
       if(error) throw error;
       uid=data.user.id;
     }
     status.textContent='آماده';
     lines.forEach(l=>l.classList.remove('disabled'));
+    // بارگذاری نام کاربری
+    const {data}=await sb.from('profiles').select('username').eq('id',uid).maybeSingle();
+    if(data&&data.username){ username=data.username; $('username-input').value=username; }
   }catch(e){
     status.textContent='خطا: '+e.message;
     status.style.color='#b5453a';
@@ -186,8 +179,23 @@ async function doAuth(){
   }
 }
 
+async function saveUsername(){
+  const inp=$('username-input');
+  const v=inp.value.trim();
+  if(v===username) return;
+  if(v.length<3){ toast('حداقل نام کاربری ۳ کاراکتر'); inp.value=username||''; return; }
+  if(v.length>7){ toast('حداکثر نام کاربری ۷ کاراکتر'); inp.value=username||''; return; }
+  const {error}=await sb.rpc('set_username',{p_username:v});
+  if(error){
+    toast(error.message);
+    inp.value=username||'';
+    return;
+  }
+  username=v;
+  toast('نام کاربری ذخیره شد');
+}
+
 function bindUI(){
-  // تب‌ها
   document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
@@ -196,14 +204,17 @@ function bindUI(){
     if(t.dataset.tab!=='online'&&searching) cancelSearch();
   }));
 
-  // آنلاین - انتخاب اندازه
+  // نام کاربری
+  const inp=$('username-input');
+  inp.addEventListener('blur',saveUsername);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
+
   document.querySelectorAll('#size-select .line').forEach(l=>l.addEventListener('click',()=>{
     if(!uid) return;
     startSearch(parseInt(l.dataset.size));
   }));
   $('cancel-btn').addEventListener('click',cancelSearch);
 
-  // چت
   $('send-btn').addEventListener('click',sendChat);
   $('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();sendChat();}});
   $('restart-btn').addEventListener('click',async()=>{
@@ -212,7 +223,6 @@ function bindUI(){
     await sb.rpc('request_restart',{p_game_id:gid});
   });
 
-  // آفلاین - انتخاب اندازه
   document.querySelectorAll('#off-size .line').forEach(l=>l.addEventListener('click',()=>{
     off.size=parseInt(l.dataset.size);
     $('off-size').style.display='none';
@@ -227,9 +237,6 @@ function bindUI(){
   $('off-restart').addEventListener('click',startOffline);
 }
 
-// ══════════════════════════════════════════
-// آنلاین
-// ══════════════════════════════════════════
 async function startSearch(size){
   searching=true;
   $('size-select').style.display='none';
@@ -336,11 +343,8 @@ async function onCellClick(i){
 
 function addMsg(text,who){
   const d=document.createElement('div');
-  d.className='chat-msg '+who;
-  d.textContent=text;
-  const cm=$('chat-messages');
-  cm.appendChild(d);
-  cm.scrollTop=cm.scrollHeight;
+  d.className='chat-msg '+who;d.textContent=text;
+  const cm=$('chat-messages');cm.appendChild(d);cm.scrollTop=cm.scrollHeight;
 }
 
 async function sendChat(){
@@ -352,9 +356,7 @@ async function sendChat(){
   if(error) console.warn('chat rejected:',error.message);
 }
 
-// ══════════════════════════════════════════
-// آفلاین
-// ══════════════════════════════════════════
+// ─── آفلاین ───
 const off={board:[],size:0,turn:'X',winner:null,active:false};
 
 function startOffline(){
@@ -372,8 +374,7 @@ function onOffClick(i){
   if(!off.active||off.winner||off.board[i]!==null||off.turn!=='X') return;
   doOffMove(i,'X');
   if(off.winner) return;
-  off.turn='O';
-  $('off-turn').textContent='نوبت ربات...';
+  off.turn='O';$('off-turn').textContent='نوبت ربات...';
   setTimeout(()=>{
     const mv=botMove(off.board,off.size,'O','X');
     if(mv>=0) doOffMove(mv,'O');
@@ -387,13 +388,11 @@ function doOffMove(i,sym){
   const w=checkLine(off.board,off.size,sym)?sym:(off.board.every(x=>x)?'draw':null);
   if(w){
     off.winner=w;off.active=false;
-    const os=$('off-status');
-    os.className='';
+    const os=$('off-status');os.className='';
     if(w==='draw'){os.textContent='مساوی!';os.classList.add('draw');}
     else if(w==='X'){os.textContent='برنده شدی!';os.classList.add('win');}
     else{os.textContent='ربات برد!';os.classList.add('lose');}
-    $('off-turn').textContent='';
-    $('off-restart').style.display='block';
+    $('off-turn').textContent='';$('off-restart').style.display='block';
   }
 }
 
@@ -403,8 +402,7 @@ function lineSets(n){
   for(let c=0;c<n;c++){const a=[];for(let r=0;r<n;r++)a.push(r*n+c);lines.push(a);}
   const d1=[],d2=[];
   for(let i=0;i<n;i++){d1.push(i*n+i);d2.push(i*n+(n-1-i));}
-  lines.push(d1);lines.push(d2);
-  return lines;
+  lines.push(d1);lines.push(d2);return lines;
 }
 const _cache={};
 function checkLine(b,n,sym){
@@ -412,7 +410,6 @@ function checkLine(b,n,sym){
   for(const L of lines){let ok=true;for(const x of L){if(b[x]!==sym){ok=false;break;}}if(ok) return true;}
   return false;
 }
-
 function botMove(b,n,me,opp){
   const empty=[];
   for(let i=0;i<n*n;i++) if(b[i]===null) empty.push(i);
