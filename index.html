@@ -15,41 +15,43 @@ body{font-family:Tahoma,sans-serif;display:flex;flex-direction:column;margin:0;b
 .panels{flex:1;position:relative;overflow:hidden}
 .panel{position:absolute;inset:0;background:#fffaf0;padding:16px;text-align:center;display:none;overflow-y:auto}
 .panel.active{display:block}
-.back{display:flex;align-items:center;gap:6px;color:#8b6f47;font-size:14px;font-weight:bold;cursor:pointer;padding:4px 0;width:fit-content;margin-bottom:4px}
-.back .arrow{font-size:20px}
+.back{display:flex;align-items:center;gap:6px;color:#8b6f47;font-size:15px;font-weight:bold;cursor:pointer;padding:8px 0;width:fit-content}
+.back .arrow{font-size:22px;line-height:1}
 .line{display:flex;align-items:center;justify-content:space-between;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:14px 18px;margin:10px 0;cursor:pointer;font-size:17px;font-weight:bold;color:#5a4630;text-decoration:none}
 .line:active{background:#e0cfa0;transform:scale(.98)}
 .line .arrow2{color:#8b6f47;font-size:18px}.line.disabled{opacity:.5;pointer-events:none}
 button{padding:12px 24px;font-size:15px;cursor:pointer;background:#8b6f47;color:#fff;border:none;border-radius:8px;font-family:inherit}
 button:disabled{background:#5a5f75;cursor:not-allowed}
-#auth-status{display:none}
 #username-row{display:flex;align-items:center;gap:6px;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:8px 12px;margin:0 0 6px;max-width:340px;margin-left:auto;margin-right:auto}
 #username-row label{color:#5a4630;font-weight:bold;font-size:13px;white-space:nowrap}
-#username-input{flex:1;padding:7px 10px;border:1px solid #c9b88f;border-radius:6px;background:#fffaf0;color:#3a2e1f;font-family:inherit;font-size:14px;outline:none;min-width:0;text-align:center;-webkit-user-select:text;user-select:text;transition:.2s}
+#username-input{flex:1;padding:7px 10px;border:1px solid #c9b88f;border-radius:6px;background:#fffaf0;color:#3a2e1f;font-family:inherit;font-size:14px;outline:none;min-width:0;text-align:center;-webkit-user-select:text;user-select:text}
 #username-input.locked{background:#1e2436;color:#b8bed1;border-color:#1e2436;cursor:not-allowed;pointer-events:none}
 #confirm-btn{padding:7px 12px;font-size:13px;background:#2e7d6f;border-radius:6px}
 #confirm-btn:disabled{background:#3a4055}
 #lock-msg{font-size:11px;color:#b5453a;margin:4px 0 8px;min-height:14px;text-align:center}
-#size-select{margin-top:80px;padding:0 8px;text-align:center}
+#size-select{margin-top:60px;padding:0 8px}
 #size-select p{color:#5a4630;font-size:14px;margin:0 0 14px;font-weight:bold}
 #size-select .line{max-width:340px;margin:10px auto}
-#game-names{display:flex;align-items:center;justify-content:space-between;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:10px 14px;margin:0 0 10px;font-weight:bold;font-size:14px;max-width:340px;margin-left:auto;margin-right:auto}
-#game-names .vs{color:#b5453a;font-size:13px;padding:0 8px}
-#my-name{color:#2e7d6f}#opp-name{color:#b5453a}
-#waiting{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;gap:22px}
+#waiting{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:24px}
 #waiting p{color:#5a4630;font-size:16px;font-weight:bold;margin:0}
 .spinner{width:46px;height:46px;border:5px solid #e0cfa0;border-top-color:#8b6f47;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.board{display:grid;gap:6px;background:#8b6f47;padding:8px;border-radius:12px;margin:12px auto;width:100%;max-width:320px;aspect-ratio:1;touch-action:none}
-.cell{background:#fffaf0;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:pointer;aspect-ratio:1;contain:layout style paint}
-.cell.taken{cursor:default}
-.cell.x{color:#b5453a}.cell.o{color:#2e7d6f}
-.cell.x::after{content:'X'}.cell.o::after{content:'O'}
+#game-names{display:flex;align-items:center;justify-content:space-between;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:10px 14px;margin:0 auto 6px;font-weight:bold;font-size:14px;max-width:320px}
+#game-names .vs{color:#b5453a;font-size:13px;padding:0 8px}
+#my-name{color:#2e7d6f}#opp-name{color:#b5453a}
+#game-exit{display:none;align-items:center;gap:4px;color:#b5453a;font-size:14px;font-weight:bold;cursor:pointer;padding:4px 0;max-width:320px;margin:0 auto 8px;justify-content:flex-start}
+#game-exit .ic{font-size:20px;line-height:1}
+#game-exit:active{opacity:.7}
 #game-status,#off-status{font-size:17px;margin:6px 0;min-height:24px;font-weight:bold}
 #turn-indicator,#off-turn{margin:4px 0;color:#8b6f47;font-size:13px;min-height:18px}
 #game-status.win,#off-status.win{color:#2e7d6f}
 #game-status.lose,#off-status.lose{color:#b5453a}
 #game-status.draw,#off-status.draw{color:#c48a1a}
+.board{display:grid;gap:6px;background:#8b6f47;padding:8px;border-radius:12px;margin:12px auto;width:100%;max-width:320px;aspect-ratio:1;touch-action:none}
+.cell{background:#fffaf0;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:pointer;aspect-ratio:1}
+.cell.taken{cursor:default}
+.cell.x{color:#b5453a}.cell.o{color:#2e7d6f}
+.cell.x::after{content:'X'}.cell.o::after{content:'O'}
 #chat-section{margin:12px auto 0;background:#f0e4c8;border-radius:10px;padding:8px;width:100%;max-width:320px;border:1px solid #c9b88f}
 #chat-header{font-size:12px;color:#8b6f47;margin-bottom:6px;border-bottom:1px solid #c9b88f;padding-bottom:4px}
 #chat-messages{height:110px;overflow-y:auto;padding:3px;display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
@@ -60,12 +62,11 @@ button:disabled{background:#5a5f75;cursor:not-allowed}
 #chat-input-row{display:flex;gap:5px}
 #chat-input{flex:1;padding:7px 9px;border-radius:7px;border:1px solid #c9b88f;background:#fffaf0;color:#3a2e1f;font-family:inherit;font-size:12px;outline:none;min-width:0;-webkit-user-select:text;user-select:text}
 #send-btn{padding:7px 12px;font-size:12px;margin:0;background:#b5453a}
-#menu-btn,#off-restart{margin-top:8px;background:#2e7d6f;width:100%;max-width:320px}
+#menu-btn{margin-top:8px;background:#2e7d6f;width:100%;max-width:320px}
+#off-restart{margin-top:8px;background:#2e7d6f;width:100%;max-width:320px}
 #off-back{margin-top:8px;background:#8b6f47}
 #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#b5453a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:1000;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
 #toast.show{opacity:1}#toast.ok{background:#2e7d6f}
-#exit-arrow{display:none;position:absolute;top:8px;left:8px;font-size:26px;color:#8b6f47;font-weight:bold;cursor:pointer;padding:2px 14px;z-index:50;line-height:1;background:rgba(255,250,240,.9);border:2px solid #8b6f47;border-radius:8px;touch-action:manipulation}
-#exit-arrow:active{color:#b5453a;background:#e0cfa0}
 #modal-bg{display:none;position:fixed;inset:0;background:rgba(30,20,10,.55);z-index:200;align-items:center;justify-content:center}
 #modal-bg.show{display:flex}
 #modal{background:#fffaf0;border:2px solid #8b6f47;border-radius:14px;padding:22px 20px;max-width:320px;width:88%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.3)}
@@ -85,15 +86,12 @@ button:disabled{background:#5a5f75;cursor:not-allowed}
 
 <div class="panels">
   <div class="panel active" id="panel-online">
-    <div id="exit-arrow">›</div>
-
     <div id="username-row">
       <label for="username-input">نام:</label>
       <input id="username-input" type="text" maxlength="7" placeholder="۳ تا ۷ کاراکتر">
       <button id="confirm-btn">تایید</button>
     </div>
     <div id="lock-msg"></div>
-    <p id="auth-status"></p>
 
     <div id="size-select">
       <p>اندازه تخته را انتخاب کن:</p>
@@ -101,13 +99,16 @@ button:disabled{background:#5a5f75;cursor:not-allowed}
       <div class="line disabled" data-size="7"><span>۷×۷</span><span class="arrow2">›</span></div>
       <div class="line disabled" data-size="10"><span>۱۰×۱۰</span><span class="arrow2">›</span></div>
     </div>
+
     <div id="waiting">
       <div class="back" id="cancel-btn"><span class="arrow">›</span>خروج از این قسمت</div>
       <p>در حال پیدا کردن بازیکن...</p>
       <div class="spinner"></div>
     </div>
+
     <div id="game" style="display:none">
       <div id="game-names"><span id="my-name">---</span><span class="vs">vs</span><span id="opp-name">---</span></div>
+      <div id="game-exit"><span class="ic">›</span>خروج از بازی</div>
       <div id="game-status"></div>
       <div id="turn-indicator"></div>
       <div class="board" id="board"></div>
@@ -271,7 +272,7 @@ function bindUI(){
 
   $('menu-btn').addEventListener('click',cancelSearch);
 
-  $('exit-arrow').addEventListener('click',()=>{
+  $('game-exit').addEventListener('click',()=>{
     if(gstate&&gstate.status==='playing'&&!gstate.winner){
       $('modal-bg').classList.add('show');
     }else{
@@ -296,50 +297,61 @@ function bindUI(){
   $('off-restart').addEventListener('click',startOffline);
 }
 
-function updateExitArrow(){
-  const inGame = gstate && gstate.status==='playing' && !gstate.winner;
-  $('exit-arrow').style.display = inGame ? 'block' : 'none';
-}
-
 async function startSearch(size){
   searching=true;
   $('size-select').style.display='none';
+  $('username-row').style.display='none';
+  $('lock-msg').style.display='none';
   $('waiting').style.display='flex';
-  const {data,error}=await sb.rpc('find_match',{p_size:size});
-  if(error||!data){searching=false;alert('خطا: '+(error?.message||'?'));return cancelSearch();}
-  gid=data;subscribeGame();
+  try{
+    const {data,error}=await sb.rpc('find_match',{p_size:size});
+    if(error||!data){searching=false;alert('خطا: '+(error?.message||'?'));return cancelSearch();}
+    gid=data;
+    // ⚡ رندر فوری: بلافاصله داده بازی رو بگیر
+    const {data:g}=await sb.from('games').select('*').eq('id',gid).single();
+    if(g) renderGame(g);
+    // سپس subscribe برای آپدیت‌های بعدی
+    subscribeGame();
+  }catch(e){
+    searching=false;
+    cancelSearch();
+  }
 }
 
-/* ⚡ رفع مشکل: قبل از بستن کانال، gid رو null می‌کنیم و همه چیز رو ریست */
 async function cancelSearch(){
   searching=false;
-  const oldGid=gid;
-  gid=null;
-  gstate=null;
-  oppName=null;
-  if(ch){try{await sb.removeChannel(ch);}catch(e){}ch=null;}
-  if(oldGid){try{await sb.rpc('cancel_search');}catch(e){}}
+  const old=gid;
+  gid=null;gstate=null;oppName=null;
+  if(ch){try{sb.removeChannel(ch);}catch(e){}ch=null;}
+  if(old){try{await sb.rpc('cancel_search');}catch(e){}}
   $('waiting').style.display='none';
   $('size-select').style.display='block';
   $('game').style.display='none';
   $('username-row').style.display='flex';
   $('lock-msg').style.display='block';
-  $('game-status').textContent='';
-  $('game-status').className='';
+  $('game-status').textContent='';$('game-status').className='';
   $('turn-indicator').textContent='';
-  $('my-name').textContent='---';
-  $('opp-name').textContent='---';
+  $('my-name').textContent='---';$('opp-name').textContent='---';
   $('chat-messages').innerHTML='';
   $('board').innerHTML='';
   $('menu-btn').style.display='none';
-  updateExitArrow();
+  $('game-exit').style.display='none';
 }
 
-/* ⚡ رفع مشکل: snapshot از gid می‌گیریم تا کال‌بک‌های قدیمی کاری نکنن */
 function subscribeGame(){
   if(ch) sb.removeChannel(ch);
   const myGid=gid;
   ch=sb.channel('g-'+myGid)
+    .on('broadcast',{event:'move'},({payload})=>{
+      if(myGid!==gid||!gstate) return;
+      if(gstate.board[payload.cell]!==null) return;
+      gstate.board[payload.cell]=payload.sym;
+      gstate.current_turn=payload.sym==='X'?'O':'X';
+      const cell=$('board').children[payload.cell];
+      if(cell) cell.classList.add(payload.sym.toLowerCase(),'taken');
+      const my=gstate.player_x===uid?'X':'O';
+      $('turn-indicator').textContent=gstate.current_turn===my?'نوبت شماست':'نوبت حریف';
+    })
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'games',filter:'id=eq.'+myGid},p=>{
       if(myGid!==gid) return;
       renderGame(p.new);
@@ -365,12 +377,11 @@ async function loadOppName(g){
   $('opp-name').textContent=oppName;
 }
 
-/* ⚡ رفع مشکل: اگه gid null شده، سریع برگرد */
 function renderGame(g){
-  if(!gid) return;
-  if(!g) return;
+  if(!gid||!g) return;
   gstate=g;
-  if(g.status==='waiting'){updateExitArrow();return;}
+  if(g.status==='waiting') return;
+
   if($('waiting').style.display==='flex'||$('game').style.display==='none'){
     $('waiting').style.display='none';
     $('game').style.display='block';
@@ -380,9 +391,11 @@ function renderGame(g){
     buildBoard($('board'),g.size,onCellPointer);
   }
   loadOppName(g);
+
   const my=g.player_x===uid?'X':'O';
   for(let i=0;i<g.board.length;i++){
-    const c=$('board').children[i],v=g.board[i];
+    const c=$('board').children[i];if(!c) continue;
+    const v=g.board[i];
     const cls='cell'+(v?' '+v.toLowerCase()+' taken':'');
     if(c.className!==cls) c.className=cls;
   }
@@ -392,13 +405,15 @@ function renderGame(g){
     if(g.winner==='draw'){gs.textContent='مساوی!';gs.classList.add('draw');}
     else if(g.winner===my){gs.textContent='برنده شدی!';gs.classList.add('win');}
     else{gs.textContent='باختی!';gs.classList.add('lose');}
-    ti.textContent='';$('menu-btn').style.display='block';
+    ti.textContent='';
+    $('menu-btn').style.display='block';
+    $('game-exit').style.display='none';
   }else{
     gs.textContent='';gs.className='';
     ti.textContent=g.current_turn===my?'نوبت شماست':'نوبت حریف';
     $('menu-btn').style.display='none';
+    $('game-exit').style.display='flex';
   }
-  updateExitArrow();
 }
 
 function buildBoard(container,n,handler){
@@ -409,7 +424,6 @@ function buildBoard(container,n,handler){
     const c=document.createElement('div');
     c.className='cell';c.dataset.index=i;c.style.fontSize=cf;
     c.addEventListener('pointerdown',handler,{passive:false});
-    if(!window.PointerEvent) c.addEventListener('touchstart',handler,{passive:false});
     frag.appendChild(c);
   }
   container.innerHTML='';container.appendChild(frag);
@@ -417,20 +431,30 @@ function buildBoard(container,n,handler){
 
 function onCellPointer(e){e.preventDefault();onCellClick(parseInt(e.currentTarget.dataset.index));}
 
-async function onCellClick(i){
+function onCellClick(i){
   if(!gstate||gstate.status!=='playing'||gstate.winner) return;
   const my=gstate.player_x===uid?'X':'O';
   if(gstate.current_turn!==my||gstate.board[i]!==null) return;
+
+  // ⚡ نمایش فوری
   const cell=$('board').children[i];
   cell.classList.add(my.toLowerCase(),'taken');
   $('turn-indicator').textContent='نوبت حریف';
-  gstate.board[i]=my;gstate.current_turn=my==='X'?'O':'X';
-  const {error}=await sb.rpc('make_move',{p_game_id:gid,p_cell:i});
-  if(error){
-    cell.classList.remove(my.toLowerCase(),'taken');
-    gstate.board[i]=null;gstate.current_turn=my;
-    $('turn-indicator').textContent='نوبت شماست';
-  }
+  gstate.board[i]=my;
+  gstate.current_turn=my==='X'?'O':'X';
+
+  // ⚡ ارسال سریع از طریق broadcast (برای حریف)
+  if(ch) ch.send({type:'broadcast',event:'move',payload:{cell:i,sym:my}});
+
+  // سپس RPC برای اعتبارسنجی سرور
+  sb.rpc('make_move',{p_game_id:gid,p_cell:i}).then(({error})=>{
+    if(error){
+      cell.classList.remove(my.toLowerCase(),'taken');
+      gstate.board[i]=null;
+      gstate.current_turn=my;
+      $('turn-indicator').textContent='نوبت شماست';
+    }
+  });
 }
 
 function addMsg(text,who){
@@ -468,7 +492,7 @@ function onOffClick(i){
     const mv=botMove(off.board,off.size,'O','X');
     if(mv>=0) doOffMove(mv,'O');
     if(!off.winner){off.turn='X';$('off-turn').textContent='نوبت شماست';}
-  },300);
+  },250);
 }
 
 function doOffMove(i,sym){
@@ -512,4 +536,4 @@ function botMove(b,n,me,opp){
 }
 </script>
 </body>
-        </html>
+  </html>
