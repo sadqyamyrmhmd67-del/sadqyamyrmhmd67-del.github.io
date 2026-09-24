@@ -23,8 +23,6 @@ body{font-family:Tahoma,sans-serif;display:flex;flex-direction:column;margin:0;b
 button{padding:12px 24px;font-size:15px;cursor:pointer;background:#8b6f47;color:#fff;border:none;border-radius:8px;font-family:inherit}
 button:disabled{background:#5a5f75;cursor:not-allowed}
 #auth-status{display:none}
-
-/* ─── پروفایل بالا ─── */
 #username-row{display:flex;align-items:center;gap:6px;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:8px 12px;margin:0 0 6px;max-width:340px;margin-left:auto;margin-right:auto}
 #username-row label{color:#5a4630;font-weight:bold;font-size:13px;white-space:nowrap}
 #username-input{flex:1;padding:7px 10px;border:1px solid #c9b88f;border-radius:6px;background:#fffaf0;color:#3a2e1f;font-family:inherit;font-size:14px;outline:none;min-width:0;text-align:center;-webkit-user-select:text;user-select:text;transition:.2s}
@@ -32,13 +30,9 @@ button:disabled{background:#5a5f75;cursor:not-allowed}
 #confirm-btn{padding:7px 12px;font-size:13px;background:#2e7d6f;border-radius:6px}
 #confirm-btn:disabled{background:#3a4055}
 #lock-msg{font-size:11px;color:#b5453a;margin:4px 0 8px;min-height:14px;text-align:center}
-
-/* ─── تخته انتخاب ─── */
 #size-select{margin-top:80px;padding:0 8px;text-align:center}
 #size-select p{color:#5a4630;font-size:14px;margin:0 0 14px;font-weight:bold}
 #size-select .line{max-width:340px;margin:10px auto}
-
-/* ─── بازی ─── */
 #game-names{display:flex;align-items:center;justify-content:space-between;background:#f0e4c8;border:2px solid #8b6f47;border-radius:10px;padding:10px 14px;margin:0 0 10px;font-weight:bold;font-size:14px;max-width:340px;margin-left:auto;margin-right:auto}
 #game-names .vs{color:#b5453a;font-size:13px;padding:0 8px}
 #my-name{color:#2e7d6f}#opp-name{color:#b5453a}
@@ -302,7 +296,6 @@ function bindUI(){
   $('off-restart').addEventListener('click',startOffline);
 }
 
-// ─── فقط در حین بازی نشان بده ───
 function updateExitArrow(){
   const inGame = gstate && gstate.status==='playing' && !gstate.winner;
   $('exit-arrow').style.display = inGame ? 'block' : 'none';
@@ -317,26 +310,48 @@ async function startSearch(size){
   gid=data;subscribeGame();
 }
 
+/* ⚡ رفع مشکل: قبل از بستن کانال، gid رو null می‌کنیم و همه چیز رو ریست */
 async function cancelSearch(){
   searching=false;
-  if(ch){sb.removeChannel(ch);ch=null;}
-  try{await sb.rpc('cancel_search');}catch(e){}
+  const oldGid=gid;
+  gid=null;
+  gstate=null;
+  oppName=null;
+  if(ch){try{await sb.removeChannel(ch);}catch(e){}ch=null;}
+  if(oldGid){try{await sb.rpc('cancel_search');}catch(e){}}
   $('waiting').style.display='none';
   $('size-select').style.display='block';
   $('game').style.display='none';
   $('username-row').style.display='flex';
   $('lock-msg').style.display='block';
-  gid=null;gstate=null;oppName=null;
+  $('game-status').textContent='';
+  $('game-status').className='';
+  $('turn-indicator').textContent='';
+  $('my-name').textContent='---';
+  $('opp-name').textContent='---';
+  $('chat-messages').innerHTML='';
+  $('board').innerHTML='';
+  $('menu-btn').style.display='none';
   updateExitArrow();
 }
 
+/* ⚡ رفع مشکل: snapshot از gid می‌گیریم تا کال‌بک‌های قدیمی کاری نکنن */
 function subscribeGame(){
   if(ch) sb.removeChannel(ch);
-  ch=sb.channel('g-'+gid)
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'games',filter:'id=eq.'+gid},p=>renderGame(p.new))
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:'game_id=eq.'+gid},p=>addMsg(p.new.text,p.new.user_id===uid?'me':'opponent'))
+  const myGid=gid;
+  ch=sb.channel('g-'+myGid)
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'games',filter:'id=eq.'+myGid},p=>{
+      if(myGid!==gid) return;
+      renderGame(p.new);
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:'game_id=eq.'+myGid},p=>{
+      if(myGid!==gid) return;
+      addMsg(p.new.text,p.new.user_id===uid?'me':'opponent');
+    })
     .subscribe(async()=>{
-      const {data}=await sb.from('games').select('*').eq('id',gid).single();
+      if(myGid!==gid) return;
+      const {data}=await sb.from('games').select('*').eq('id',myGid).single();
+      if(myGid!==gid) return;
       if(data) renderGame(data);
     });
 }
@@ -350,7 +365,10 @@ async function loadOppName(g){
   $('opp-name').textContent=oppName;
 }
 
+/* ⚡ رفع مشکل: اگه gid null شده، سریع برگرد */
 function renderGame(g){
+  if(!gid) return;
+  if(!g) return;
   gstate=g;
   if(g.status==='waiting'){updateExitArrow();return;}
   if($('waiting').style.display==='flex'||$('game').style.display==='none'){
@@ -429,7 +447,6 @@ async function sendChat(){
   await sb.rpc('send_message',{p_game_id:gid,p_text:t});
 }
 
-// ─── آفلاین (بدون دیتابیس) ───
 const off={board:[],size:0,turn:'X',winner:null,active:false};
 
 function startOffline(){
